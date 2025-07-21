@@ -66,7 +66,7 @@ Regulation is constantly updated and changed in governments.  Definitions of "co
 This could be solved by either deploying new verifier contracts on each compliance update or by introducing some semantic versioning scheme that can resolve which proofs are forward or backward compatible with eachother.  Deploying a new verifier contract would require the TC clone in the above example to make a new deployment of the protocol, resulting in 2 independent anonymity sets.  \reminder{Joss: Anonymity sets benefit from network effects and this fragmentation of anonymity sets is quite detrimental to privacy.  I'm now realizing the true elegance of Association Sets \cite{buterin2023blockchain} which requires users to give the full set of addresses that the users funds will be mixed with.  If there was a way to implement Privacy Pool's Association Sets but with compliance proofs that would be wicked cool}
 
 \section{Semantic Fungibility}
-For simplicity, in this section we'll say the subject of compliance is ERC-20 tokens.  Other possible subjects are groups of transactions, contracts, or addresses.
+For simplicity, in this section we'll say the subject of compliance is ERC-20 tokens.  This might not apply to other compliance subjects, see section "Compliance subject".  Other possible subjects are groups of transactions, contracts, or addresses.
 In this framework the subject should have fungibility with its peers but non-fungible across different ZKPs attached.  This creates fungibility sets where some tokens are fungible with others of the same origin but not all.  
 For example: Alice has 100 USDC and proves compliance on 25 of them.  Her balance of USDC is 100.  But to an application that requires only compliant USDC her effective balance is 25.  The compliant USDC are fungible with unproven USDC, but the unproven USDC isn't fungible with compliant USDC.
 A more complex example: Alice has 100 USDC: USDC\textsubscript{base} and proves compliance X on 50 of them: USDC\textsubscript{X}.  She then proves compliance Y on 30 tokens: USDC\textsubscript{Y}.  She proved compliance Y on 10 of her USDC\textsubscript{base} and 20 of her USDC\textsubscript{X}.  She still only has 100 USDC, but there is overlap between which can be used fungibly.  
@@ -80,6 +80,14 @@ Her effective balances from the perspective of...
 \end{itemize}
 
 These are her balances of the tokens described in terms of metadata attached: 20 USDC\textsubscript{X and Y and base}, 10 USDC\textsubscript{Y and base}, 30 USDC\textsubscript{X and base}, and 40 USDC\textsubscript{base}.  All 100 of her tokens are fungible with USDC\textsubscript{base}.  Her USDC\textsubscript{X and Y and base} is fungible with USDC\textsubscript{X and base} and USDC\textsubscript{Y and base}.  Her USDC\textsubscript{X and base} is NOT fungible with her USDC\textsubscript{Y and base}.
+
+\section{Compliance subject}
+
+We refer to "subject" as the on-chain item associated with the compliance.  The subject could be a token or NFT, a transaction or group of transactions, or an address.  Initially the subject was thought to be tokens, or a standard with the ERC-20 token standard.  However an open question is whether tokens should maintain their compliance proof metadata when they are transferred or go through a protocol.  A non-sanctioned address could prove compliance on their tokens then immedietly send the tokens to a sanctioned address.  The proof attached to the tokens will still verify, but the invariant is broken because the sanctioned address holds the token.  To solve this, proofs would have to be re-generated on every transfer, which would be expensive and add a flat overhead cost to all token interactions.
+
+Another native compliance subject is addresses themselves.  An address can prove they aren't on a sanction list and as a result be allowed to use certain protocols.  The problem with this approach is that all new addresses start as non-sanctioned and can behave as such until they end up on a sanction list.  In this case, the compliance proof attached needs to be invalidated.  Sanction lists are often updated and forever growing in size.  Our proposed solution should support frequent updates to sanction lists.  Frequent updates is an argument for non-upgradable verifier contracts that have some way of detecting if a compliance criteria has been changed since the last time a proof was generated.  Difficult because the proof is generated off-chain.
+
+\reminder{Joss: I think much of our research should focus on the usecase of sanction lists i.e. non-membership proofs.  When anyone in the industry talks about "compliance", they are talking about sanctions lists}
 
 
 \section{Settings for Privacy Protocols}
