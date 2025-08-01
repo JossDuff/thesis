@@ -28,332 +28,91 @@
 
 \reminder{ HFK: redirected bib to blockchain.bib.  Will explain more on our zoom.  Also note my ``reminder'' macro which gives us a way to add notes that not only stand out but also print (overleaf comments don't print).}
 
-Here is a bullet list
-\begin{itemize}
-    \item cat
-    \item dog
-\end{itemize}
-
-\begin{enumerate}
-    \item cat
-    \item dog
-\end{enumerate}
-
 \section{Problem}
-Blockchains are fundamentally psuedononymous and public: user identities are obfusacted behind address but all activity between addresses is public by default.  In practice, entities are able to associate identities to addresses when on-ramping traditional funds to cryptocurrency and therefore track individuals' flows of funds on-chain.  In order for cryptocurrency to be practical for consumers, it must at the very least have the same level of privacy as traditional finance.  In traditional finance typically 2 entities know information about a user's funds; the user themself and the exchange that is custodian of the funds.  In blockchain settings, all entities can track user funds and activity.
+Blockchains are fundamentally pseudonymous and public: user identities are obfuscated behind addresses, but all activity between addresses is public by default.  In practice, entities are able to associate identities to addresses when on-ramping traditional funds to cryptocurrency and therefore track individuals' flows of funds on-chain.  In order for cryptocurrency to be practical for consumers, it must at the very least have the same level of privacy as traditional finance.  In traditional finance typically 2 entities know information about a user's funds; the user them self and the exchange that is custodian of the funds.  In blockchain settings, all entities can track user funds and activity.
+
 \reminder{Joss: Do I need to make an argument for why privacy is important in this setting or can that be skipped?  Should I expand more on this?} 
+\reminder{hfk: good for now.  For a broader audience worth pointing out with a real-life example: it is as if
+a person paying with a debit card at a merchant reveals to that merchant full details on all past and future transactions on that account.}
+\reminder{joss: There's a slew of real life online privacy horror stories that I could use as citations in a "privacy is safety" introduction.}
+
 Privacy is a growing field in the blockchain space \cite{tornadocash, 7503, 6956581, ultraanon} but is suffering from malicious actors utilizing privacy to launder funds.  In an effort to reduce money laundering, regulatory bodies are pursuing legal action against developers of privacy protocols \cite{kuhn_samourai_2024,doj_tornado_cash_2023,bitcoin_fog_2021}.  This introduces the need for explicitly meeting regulatory compliance inside private on-chain applications.
-Privacy and compliance classically oppose eachother: privacy requries only the individual knows some information and compliance requires an individual meets a set of public criteria proposed by a government's regulatory body.  A user who meets some compliance criteria leaks privacy when they reveal a receipt of compliance to a counterparty because the countrparty now knows some properties of the compliant individual's information.
-The goal is to maximize privacy while maintaining the ability to prove compliance.  Current research attempting to bridge privacy and compliance have proposed solutions with strict setting limitations like a new blockchain architecture or an individual protocol.  We investigate a framework that allows for compliance in any blockchain setting and in any privacy protocol without compromising privacy provided by the protocol.  
+
+Privacy and compliance classically oppose each other: privacy requires only the individual to know some information, and compliance requires that the individual meets a set of public criteria proposed by a government's regulatory body.  A user who meets some compliance criteria leaks privacy when they reveal a receipt of compliance to a counterparty because the counterparty now knows some properties of the compliant individual's information.
+
+The goal is to maximize privacy while maintaining the ability to prove compliance.  Current research attempting to bridge privacy and compliance have proposed solutions with strict domain limitations, such as a new blockchain architecture or a new on-chain protocol.  We investigate a framework that allows for compliance in any blockchain domain and in any privacy protocol without compromising privacy provided by the protocol.  
+
 \reminder{Joss: not actually *any* blockchain setting.  We won't be able to implement this onto blockchains without Turing complete smart contract languages.  Also it's unlikely that this will work for *any* privacy protocol but I'll come back to this statement when I have a better idea of what the blocking property is when I discover it.}
+
 \reminder{Joss: "without compromising privacy provided by the protocol" is the goal.  I'll expand on the possibility of this later and will also revisit this statement.}
 
 \section{Proposed Solution}
 Zero Knowledge Proofs (ZKPs) are a natural avenue for proving compliance as they allow proving compliance without revealing user information.  Governments decide their criteria for regulatory compliance then express this criteria in a Zero Knowledge Domain Specific Language like Noir or Circom and publish the program to generate a proof of compliance.  They must also publish an address of the on-chain smart contract that can verify a ZKP of this compliance.  To prove compliance, users input their private data to the program and generate a ZKP.  Compliance can be verified at any time by inputting the ZKP to the verification contract.  
+
 This framework will be used by privacy protocols to require users are compliant before executing smart contract logic.  For example, a developer could make a Tornado Cash clone that requires a United States regulatory compliance ZKP before depositing.  This check is implemented at the smart contract level and provides a guarantee as strong as the economic security of the blockchain the contract is deployed on that only US compliant entities can utilize the privacy from this Tornadocash clone.  Another Torando Cash clone can be deployed that only allows users who are compliant with China's regulation.
 
 This fundamental idea raises multiple problems:
 \begin{enumerate}
 	\item Multiple and Changing Compliance Criteria
-	\item Semantic Fungibility
-    \item Compliance over what.  "Subject" of compliance: groups of transactions or individual tokens?  The subject needs to be able to be identifiable.
-	\item Proof path - associate the proof to the subject of the compliance so users can't re-use or "sell" proofs.  This association needs to be "sticky" and stay attached to the subject through mixers, EOA transfers, and smart contract interactions.
+	\item Proof path
+    \item Proof scaling
+    \item properties available to prove
 \end{enumerate}
 
-\section{Multiple and Changing Compliance Criteria}
-Each regulatory body of governments around the world will have different criteria of what "compliance" is in their government and therefore different programs to generate ZKPs from.  Our framework need to be able to have multiple proofs attached with a method to distinguish the proofs.  A user who has proved compliance with regulation A and regulation B should be able to utilize an application that requires compliance with regulation A.  Unless compliance for A and B directly contradict eachother.  In this case these two proofs shouldn't be able to be attached to the same subject in the first place.
-Regulation is constantly updated and changed in governments.  Definitions of "compliance" will undoubtedly change over time.  The framework needs to be able to handle updatable compliance criteria.  A compliance update will start with the regulatory body publish a new program and verifier contract for new ZKPs.  A new contract must be deployed because the new criteria of compliance might not be backward compatible with the previous criteria for that regulatory body.  If the same contract address was used then applications wouldn't have to update but it would result in unintended situations like non-compliant actors in the same anonymity set as compliant actors.  A simple example: compliance criteria starts of as a proof of non-membership in a set of sanctioned addresses.  This compliance is required in a Tornado Cash clone.  Users on-board to the Tornado Cash clone and benefit from eachother via the increasing anonymity set.  Then, the compliance criteria is updated to include more addresses in the list of sanctioned addresses.  A new verifier contract is not deployed so the Tornado Cash clone doesn't need to update.  One of the newly sanctioned addresses had previously sent funds into the Tornado Cash clone.  New users deposit into the TC clone and prove compliance on the new criteria.  However, now these users are mixing funds with sanctioned addresses and the sanctioned address is benefitting from the anonymity provided by the compliant users.  This means the newly compliant users are helping sanctioned addresses launder money.
-This could be solved by either deploying new verifier contracts on each compliance update or by introducing some semantic versioning scheme that can resolve which proofs are forward or backward compatible with eachother.  Deploying a new verifier contract would require the TC clone in the above example to make a new deployment of the protocol, resulting in 2 independent anonymity sets.  \reminder{Joss: Anonymity sets benefit from network effects and this fragmentation of anonymity sets is quite detrimental to privacy.  I'm now realizing the true elegance of Association Sets \cite{buterin2023blockchain} which requires users to give the full set of addresses that the users funds will be mixed with.  If there was a way to implement Privacy Pool's Association Sets but with compliance proofs that would be wicked cool}
+\section{Multiple Compliance Criteria}
+Each regulatory body of governments around the world will have different criteria of what "compliance" is in their government, and therefore will have different programs to generate ZKPs from.  Our framework needs to be able to have multiple proofs attached with a method to distinguish the proofs.  A user who has proved compliance with regulations A and B should be able to utilize an application that requires compliance with regulations A.  Unless compliance for A and B directly contradict each other.  In this case these two proofs shouldn't be able to be attached to the same subject in the first place.
 
-\section{Semantic Fungibility}
-For simplicity, in this section we'll say the subject of compliance is ERC-20 tokens.  This might not apply to other compliance subjects, see section "Compliance subject".  Other possible subjects are groups of transactions, contracts, or addresses.
-In this framework the subject should have fungibility with its peers but non-fungible across different ZKPs attached.  This creates fungibility sets where some tokens are fungible with others of the same origin but not all.  
-For example: Alice has 100 USDC and proves compliance on 25 of them.  Her balance of USDC is 100.  But to an application that requires only compliant USDC her effective balance is 25.  The compliant USDC are fungible with unproven USDC, but the unproven USDC isn't fungible with compliant USDC.
-A more complex example: Alice has 100 USDC: USDC\textsubscript{base} and proves compliance X on 50 of them: USDC\textsubscript{X}.  She then proves compliance Y on 30 tokens: USDC\textsubscript{Y}.  She proved compliance Y on 10 of her USDC\textsubscript{base} and 20 of her USDC\textsubscript{X}.  She still only has 100 USDC, but there is overlap between which can be used fungibly.  
-
-Her effective balances from the perspective of...
-\begin{itemize}
-	\item a protocol that doesn't require any compliance: 100
-	\item a protocol that requries compliance Y: 30 
-	\item a protocol that requries compliance X: 50
-	\item a protocol that requries compliance X and Y: 20
-\end{itemize}
-
-These are her balances of the tokens described in terms of metadata attached: 20 USDC\textsubscript{X and Y and base}, 10 USDC\textsubscript{Y and base}, 30 USDC\textsubscript{X and base}, and 40 USDC\textsubscript{base}.  All 100 of her tokens are fungible with USDC\textsubscript{base}.  Her USDC\textsubscript{X and Y and base} is fungible with USDC\textsubscript{X and base} and USDC\textsubscript{Y and base}.  Her USDC\textsubscript{X and base} is NOT fungible with her USDC\textsubscript{Y and base}.
-
-\section{Compliance subject}
-
-We refer to "subject" as the on-chain item associated with the compliance.  The subject could be a token or NFT, a transaction or group of transactions, or an address.  Initially the subject was thought to be tokens, or a standard with the ERC-20 token standard.  However an open question is whether tokens should maintain their compliance proof metadata when they are transferred or go through a protocol.  A non-sanctioned address could prove compliance on their tokens then immedietly send the tokens to a sanctioned address.  The proof attached to the tokens will still verify, but the invariant is broken because the sanctioned address holds the token.  To solve this, proofs would have to be re-generated on every transfer, which would be expensive and add a flat overhead cost to all token interactions.
-
-Another native compliance subject is addresses themselves.  An address can prove they aren't on a sanction list and as a result be allowed to use certain protocols.  The problem with this approach is that all new addresses start as non-sanctioned and can behave as such until they end up on a sanction list.  In this case, the compliance proof attached needs to be invalidated.  Sanction lists are often updated and forever growing in size.  Our proposed solution should support frequent updates to sanction lists.  Frequent updates is an argument for non-upgradable verifier contracts that have some way of detecting if a compliance criteria has been changed since the last time a proof was generated.  Difficult because the proof is generated off-chain.
-
-\reminder{Joss: I think much of our research should focus on the usecase of sanction lists i.e. non-membership proofs.  When anyone in the industry talks about "compliance", they are talking about sanctions lists}
-
-
-\section{Settings for Privacy Protocols}
-There are three main settings for decentralized privacy protocols.  Base layer (independent blockchain): Zcash, application on an existing blockchain: UltraAnon and Tornadocash, or as an appchain rollup: Hibachi CLOB.  In each setting, a privacy protocol restricted to different properties.  For example, an application is restricted to the visibility of the chain it's on by default for example, public visibility on Ethereum, and additional engineering is required for privacy properties.  Appchain rollups must have a mechanism to periodically inherit trust from their baselayer, which is arguably not yet achieved on Ethereum except for DeGate and Aztec v1.  Base layer privacy implementations have the most freedom but suffer from weaker economic security compared to a mature chain such as Ethereum.
-
-\section{Trust levels of data location}
-In privacy concerned settings, where user information is stored has different trust properties.  For example, on the Ethereum blockchain, information is stored completely trustlessly on-chain however this comes with the property of the information being completely public.  An encryption of some data can be stored instead, but the underlying data must be available from some party to reconstruct the encryption in order to verify (and therefore use) the encryption.  A trustless alternative that still preserves privacy is the Aztec Network's Private Execution Environment (PXE).  Users perform a computation privately and post a proof of the computation's valid state on-chain.  However in this setting the user cannot modify any other public data and is responsible for maintaining the data necessary to reconstruct or verify the proof.  This responsibility can be handed off to a third party like a wallet but this introduces a trust assumption.  Potentially the wallet is fully open source and audited but running remotely (not on your own server or computer).  In the best case scenario the wallet provider doesn't reveal the user data to any other entity, and the worst case is that the provider reveals it to any other entity.  Examine how different data domains are able to reach compliance.  Specifically how the different levels of trustlessness have an effect on proving arbitrary properties over user information and what the bounds of this computation is.  Also consider that not all proofs have to validate on the L1.  If you're interacting with a 3rd party you only have to prove to that 3rd party that your funds are compliant.  But the proof does have to be on the L1 to be transferred.
+\section{Updating Compliance Criteria}
+Regulation is constantly updated and changed by governments.  Definitions of ``compliance" will undoubtedly change over time.  The framework needs to be able to handle up-datable compliance criteria.  A compliance update will start with the regulatory body publishing a new program and verifier contract for new ZKPs.  A new contract must be deployed because the new criteria of compliance might not be backward compatible with the previous criteria for that regulatory body.  If the same contract address was used then applications wouldn't have to update but it would result in unintended situations like non-compliant actors in the same anonymity set as compliant actors.  A simple example: compliance criteria starts of as a proof of non-membership in a set of sanctioned addresses.  This compliance is required in a Tornado Cash clone.  Users on-board to the Tornado Cash clone and benefit from eachother via the increasing anonymity set.  Then, the compliance criteria is updated to include more addresses in the list of sanctioned addresses.  A new verifier contract is not deployed so the Tornado Cash clone doesn't need to update.  One of the newly sanctioned addresses had previously sent funds into the Tornado Cash clone.  New users deposit into the TC clone and prove compliance on the new criteria.  However, now these users are mixing funds with sanctioned addresses and the sanctioned address is benefitting from the anonymity provided by the compliant users.  This means the newly compliant users are helping sanctioned addresses launder money.
+\reminder{Joss: This is solved by requiring a compliance check on both entering and exiting of the pool.  The verifier address can stay the same}
 
 \section{Trail of Proofs}
-Compliant parties will require proof of compliance when interacting with them.  Generating these proofs is well explored \cite{solomka2025zeroknowledge,tornadocashprimer}.  Proofs of compliance will have to be able to be chained back to the origin of the tokens you're using with the compliant party.  The origin could be a block reward or on-boarding from a centralized exchange.  The original tokens can change form or change hands but always have to be accompanied by a compliance proof.  If the tokens are sent through a mixer \cite{tornadocash,buterin2023blockchain} they will need a new compliance proof generated.  To prove compliance to a 3rd party, the owner of the tokens will need to provide a proof of compliance generated after using the mixer.  This deanonymizes the owner of the tokens to the 3rd party, but the owner simply moves their tokens through another mixer to obfuscate their deanonymized address.  After this reanonymization, their next interaction with a compliant 3rd party will require 3 proofs, 1 proving compliant origin, and 1 for each use of a mixer.  The owner can choose to aggregate these proofs to only require 1 proof to prove compliance of a tokens history.
+Compliant parties will require proof of compliance when interacting with them.  Generating these proofs (at least non-membership proofs) is well explored \cite{solomka2025zeroknowledge} \cite{tornadocashprimer}.  Proofs of compliance will have to be able to be chained back to the origin of the tokens you're using with the compliant party.  The origin could be a block reward or on-boarding from a centralized exchange.  The original tokens can change form or change hands but always have to be accompanied by a compliance proof.  If the tokens are sent through a mixer \cite{tornadocash} \cite{buterin2023blockchain} they will need a new compliance proof generated.  To prove compliance to a 3rd party, the owner of the tokens will need to provide the proof of compliance from before the mixer, and a proof of compliance generated after using the mixer.  This deanonymizes the owner of the tokens to the 3rd party, but the owner simply moves their tokens through another mixer to obfuscate their deanonymized address.  After this reanonymization, their next interaction with a compliant 3rd party will require 3 proofs, 1 proving compliant origin, and 1 for each use of a mixer.  The owner can choose to aggregate these proofs to only require 1 proof to prove compliance of a tokens history.
 This model gets complex when different regulations are considered.  Each government and regulatory body will have independent and sometimes conflicting definitions of compliance.  Additionally, individual regulations might be given an addendum and require a versioning scheme.  Another problem is that this requires a strong network effect.  Each defi protocol or mixer must opt in to transferring or issuing proofs.  Compliance as a abstract property like consistency in DBs.  Compliance must be preserved through txns.  Make system for writing compliance constraints.  Could be in a programmatic lang or boolean logic (ex: SQL isn't Turing complete).  What is the minimum syntax needed for writing compliance proofs?  Limitations in the theory of computing, limitations in practicality, limitations in regulations (niche regulations, etc).  
 
 Regulatory bodies would construct the proofs necessary to fit their definitions of compliance and deploy official proof verifier smart contracts.  Applications would opt in to consume and or produce these proofs.  When a user interacts with a compliant proof-consuming application, the user would also have to provide a proof of compliance with whichever regulations the application opted into.  The proofs are then validated on-chain during the smart contract execution.  If the proof fails to validate then the smart contract function reverts, preventing non-compliance on the smart contract level and making it impossible to circumvent regulation.  Question: when regulation changes, should the application have to undergo an upgrade?  
 
-Regulatory bodies can express their logic in a novel DSL that compiles down into ZK proofs that can be treated as composable units of compliance.  Take for example 2 independent regulatory bodies C1 and C2.  C2's compliance regulation is a superset of C1's compliance regulation.  In this situation, a compliance proof that is constructed for C2 should also prove compliance for C1.  Another example; C1 and C2's compliance is modeled through a set of properties Z1, Z2, and Z3.  C1 requires Z1 and Z2 to be true, and C2 requires Z2 and Z3 to be true.  A user whose funds are compliant for C1 should be able to generate a compliance proof for C2 by only generating a proof for Z3, as the proof for Z2 was already included in the C1 proof.  [[[Joss: notation is hard.  I'm sure this is unreadable to anyone who doesn't already know what I'm trying to describe]]]
+Regulatory bodies can express their logic in a novel DSL that compiles into a program that can be treated as composable units of compliance.  Take for example 2 independent regulatory bodies C1 and C2.  C2's compliance regulation is a superset of C1's compliance regulation.  In this situation, a compliance proof that is constructed for C2 should also prove compliance for C1.  Another example; C1 and C2's compliance is modeled through a set of properties Z1, Z2, and Z3.  C1 requires Z1 and Z2 to be true, and C2 requires Z2 and Z3 to be true.  A user whose funds are compliant for C1 should be able to generate a compliance proof for C2 by only generating a proof for Z3, as the proof for Z2 was already included in the C1 proof.  [[[Joss: I'm sure this is unreadable to anyone who doesn't already know what I'm trying to describe]]]
 \reminder{HFK: the regulator's code can't compile directly to proofs since it states the criteria that an input set of transactions must satisfy.  Thus the code is the code over which a proof is generated with the transactional input kept private.}
 
 Compliance proofs could be produced by the application or the user, if it involves private user data.  It's a pretty nice property that comes inherently from using ZK proofs.  The generation can happen in any setting.  
 
 We'll examine these compliance proofs specifically in private settings, as that is the critical compliance area in blockchain currently, but the general framework could be applicable to any applications.  
 
-Additionally, the framework will be closely tied to the ERC20 token standard \cite{ethereum_erc20_2024} to rely on common interfaces with tokens.  Its worth noting that "tainted" ERC 20 tokens are possible where the interface remains the same but the underlying logic is changed.  This has resulted in some exploits in the past when a contract was assumed to have ERC 20 logic, but would only transfer 10\% of the intended amount (https://github.com/Defi-Cartel/salmonella) - cite if this makes it into the end paper.
-\reminder{HFK: fine with implementation being tied to ERC-20, but the concept itself should work equally well elsewhere.}
-
 \section{Drawbacks}
 
-Another problem is that this framework doesn't prevent a user using the privacy for non-compliant actions, it only proves that the user hasn't in the past used privacy for non-compliant actions.  For example, it can't prevent a user from sending mixed funds to make a purchase on the Silk Road.  This framework mainly protects developers of privacy protocols, as they have faced the largest punishments for enabling privacy \cite{kuhn_samourai_2024,doj_tornado_cash_2023,bitcoin_fog_2021}.  Secondarily, it protects users of privacy protocols who wish to remain fully compliant and only want privacy for security.
-
-\section{First Architecture Thoughts}
-
-The most elegant and composable approach for this framework is proposing a new Ethereum Request for Comment (ERC) standard.  ERCs are proposed standard Smart Contracts that are used across the ecosystem.
-
-When a group of tokens has a proof attached to them they are no longer fungible with the rest of the same type of token as they have the new properties of n associated proofs.  This on-chain distinguishment can be achieved by wrapping the tokens in an NFT (ERC 721) or by wrapping them in a new ERC-20 similar token with the proof property.  The NFT approach mimics a UTXO scheme, which has nice properties for privacy protocols (expand here on how UXTO schemes are easier for privacy protocols and give examples).  When the user proves on some funds, those funds are transferred into an NFT.  The token "balance" of the NFT is publicly viewable as is the proofs that the NFT is constructed with.  This does pose a gas cost concern, as the user is minting a new NFT for every proof.  This is where some benchmarking can come in handy.  Maybe this calls for a new token standard similar to NFTs but exposes a interface like ERC20 where the "balance\_of" function returns the balance of the underlying token.  The owner of the NFT will also have a function that breaks the NFT and returns the tokens into the underlying token.  This will cause the token to lose its proofs but is necessary to participate in defi.  Other necessary functions will become clear when implementation starts.
-
-[Unrelated to architecture, but another concern is that hold proofs in the contract as publicly viewable means that anyone can validate the proofs.  If the proof is a non-membership or a membership proof, this slightly de-anonymizes the user and effectively creates an anonymity set ceiling - they will always at most inherit the anonymity set of this membership or non-membership.  It is the responsibility of the user to monitor their own privacy ceiling when selecting programs to prove on their tokens (ex: don't attach a proof of both your zip code and birth year to a token).  Examine how users can maintain maximum privacy and protect themselves.  What things to look out for etc. Expand more on this concern and give solutions on how the user can maintain full anonyization].
-
-Another approach is a "branching" ERC-20 like contract that groups tokens by the proofs attached to them.  An example: 100 of token A are held by Alice.  Alice attaches a proof to 25 of these tokens with a function `attach\_proof(count)`.  This function will burn 25 of token A and mint her 25 of token A\textsubscript{proof-a}.  
-
-It might be important to lose the proofs on a transfer, as making a transfer could invalidate some of the invariants that were proved.  If this is the case, it is trivial to send the underlying token from either of the above approaches.  But we might still want to know about the tokens past.  Instead of the proof saying "you are not a sanctioned address", it should be semantically saying "the address holding this token here its not a sanctioned address".  Important inferences that can be made using proof history, like if a user from an anon. set sends funds to a sanctioned address sends funds to a sanctioned address.  Also allows for tracing the proof history on an asset.
-
-Base level fungibility with underlying token then a proof-level fungibility.  Introduces a semantic level of fungibility.  
+A problem is that this framework doesn't prevent a user using the privacy for non-compliant actions, it only proves that the user hasn't in the past used privacy for non-compliant actions.  For example, it can't prevent a user from sending mixed funds to make a purchase on the silk road.  This framework mainly protects developers of privacy protocols, as they have faced the largest punishments for enabling privacy \cite{kuhn_samourai_2024, doj_tornado_cash_2023,bitcoin_fog_2021}.  Secondarily, it protects users of privacy protocols who wish to remain fully compliant and only want privacy for security.
 
 \section{Current Compliant Privacy Protocols}
 As far as I know, the only two privacy protocols currently live that adhere to some compliance are Privacy Pools \cite{buterin2023blockchain} and Railgun \cite{railgun}.  Both only require a proof of innocence non-membership proof.  TODO: privacy pools and Railgun TVL as a proof of legitimacy and demand.  At the very least, this framework should make it trivial for other privacy protocols to integrate proofs of innocence.
 
-\section{todo}
-Problem: there's a lot of issues that intertwine.  Which issues are we trying to solve.  We don't claim to provide 100\% true privacy.  "Privacy with compliance" isn't accurate.  There fundamental tradeoffs between these two.
+\section{Constraint Domain Specific Language}
+Regulatory bodies can express their compliance criteria in a novel Domain Specific Language (DSL) that complies down to a program to generate ZK proofs over.  The compliance will be expressed as a set of properties of an address over a period of time.  If this novel DSL is sufficiently advanced, it will be able to extract properties proven in proof A for the generation of proof B to save on proving costs. 
 
-Static proof validator addresses for program providers.  The US compliance regulation will change but the validator address should remain the same so protocol address don't have to change.
+The regulatory body will publish a verifier contract for this program and publish both the address and program on a public registry to allow anyone to generate proofs of the program.
 
-\section{Source notes}
-Here I'll put my notes on sources I have or will read through.  I'll delete this later of course.
+On first proof generation of an address, the beginning time T0 will be the transaction when the addresses first received funds and the ending time T1 will be the last transaction that interacted with the address.  When the address wishes to generate another proof of the same program, T0 will be the last time the address successfully verified a proof of this program and T1 will be the last transaction that interacted with the address.
 
-\textbf{Tornado Cash Privacy Solution} \cite{tornadocash}
+Number of transactions from the address being proven for is the driving cost of proving time, not number of blocks since last proof generation.  A user with 1 transaction who last verified a proof 1000 blocks ago will have the same proving time as a user with 1 transaction who last verified a proof 5 blocks ago.  The ZK proof will take the address' transactions as inputs and verify the compliance constraints against each transaction.  The user can then use that proof to interact with an on-chain contract who requires compliance proof validation.
 
-The original privacy mixer that is the catalyst for cryptocurrency compliance discussion in the US and elsewhere.
-\\
+\section{Integration with mixers}
+Mixers unlink the sender and receiver addresses on a token transfer, creating privacy for the user.  [TODO: example TC and Privacy pools].  Mixers can integrate with our proposed solution by requiring validation on entry and exit.  Validation on exit is required for the situation where an address becomes non-compliance after entering but before exiting as a result of a compliance update.  (This is basically the same approach as Privacy Pools).
 
-\textbf{AvaCloud Ushers in New Era of Blockchain Privacy with Acquisition of EtraPay and Launch of Privacy Suite} \cite{avacloud}
+"Exit" of a mixer occurs when a user supplies a note to the mixer that proves they know the secret that hashes to a leaf in the deposit Merkle tree.  When this occurs, the funds are sent from the mixer's balance to the address that the user wishes to withdraw too.  There is no way to prove association between any 2 deposit and withdraw transactions in a mixer without revealing a user's secret.  Say the user proved compliance on deposit to the mixer with account A and wishes to withdraw from the mixer with account B.  The user can supply their note during proof generation to prove membership of the deposit Merkle tree at a specific root as well as the block of that root.  Then the properties of the proof that was validated during deposit can be carried into the withdrawl proof, but other properties and proof history of the address is lost.
 
-Avalanche acquires privacy company Etrapay.  Claims this will allow privacy through concealing user data while maintaining regulatory compliance.  Mentions FHE.  Avalanche believes there’s a market for compliant privacy preserving applications.
-\\
+\reminder{joss: a problem I need to think about.  Unsure if it's our problem or a problem for DSL implementation.  
 
-\textbf{Tornado Cash and Blockchain Privacy: A Primer for Economists and Policymakers} \cite{tornadocashprimer}
+What if the user deposits into a mixer with some funds, then makes other transactions with other funds, then comes back and withdraws from the mixer.  How can the withdrawl compliance proof be context aware of the transactions the user made before withdrawing?
 
-Proposes the use of Tornadocash with a compliance non-association proof.  Vendors/financial intermediaries who wish to remain compliant can require a valid proof of non-association for Tornadocash users.  This is referred to as voluntary disclosure.  Malicious Tornadocash users will have to find a vendor that doesn't require a proof.  This is only necessary because Tornadocash doesn't have plausible deniability: it is public which addresses deposited and withdrew from Tornadocash.  
-One issue is that of Third-Party Tainting (dusting).  A depositor can withdraw funds to any address.  A sanctioned individual can withdraw some funds to an address associated with a public entity.  It is illegal to receive funds from sanctioned individuals.  For an observer, there is no way to determine whether the receiving party interacted with the mixer or not; and the receiving party will not be able to prove they were not involved.  
-"An optimal solution will likely lie somewhere between perfect privacy and perfect observability."
-One problem with this approach is that the user will likely have to provide a chain of proofs that go all the way back to the origins of the funds, which is either an CEX onramp, block reward, or sent from another EOA.  This requires a network effect of protocols producing proofs for any balance changing interactions.
-Interesting note: Only 4 addresses deposited and withdrew from the 10,000 USDT tornadocash pool.  This is a very poor anonymity set and it would be trivial to link the deposit and withdrawl addresses based on statistical analysis. \cite{béres2020blockchainwatchingyouprofiling} does an analysis like this to de-anonymize Tornadocash users.
-\\
+What if they withdraw to an address that already has a transaction history?
+}
 
-\textbf{Ultra Anon: An experimental privacy token with maximum plausible deniability and anonymity set which blurs the lines of public and private state} \cite{ultraanon}
+\section{Address genesis properties}
+An address' first transaction is often receiving funds from an external source in order to pay gas costs for more transactions.  This external source can be a CEX, a block reward, or another user.  The problem is this "initialization" transaction of receiving funds from another address can't be distinguished from receiving funds from a mixer. 
 
-Account based privacy scheme that allows for both a public and private balance.  Anonymity set is large, as every user who has had even a public balance contributes to the anonymity set of every private transaction sent.  This is quite viral anonymity, as anyone with a balance can publicly send money to a user without a balance and forcibly add them to the anonymity set.  Another interesting property is full plausible deniability.  For any user with a public balance, it cannot be determined if they have a private balance or not.  Breaks composability as this is a new ERC token standard.
-\\
+When the initialization transaction comes from a CEX it can be accompanied by a proof of various KYC properties provided by the CEX similar to \cite{Xiong2025REGKYCSP}.  The CEX is able to assure lots of properties of an address that are otherwise unobtainable on-chain.  This is actually great for our solution because it incentivizes "washing" funds by sending them through CEXs, and CEXs hugely increase the breadth of properties available to regulatory bodies generating compliance constraints.  It also allows any compliant individual with a CEX account to re-establish their compliance properties if lost, for example, by going through a mixer.  A user simply would deposit funds into their CEX account and withdraw them.
 
-\textbf{An Empirical Analysis of Anonymity in Zcash} \cite{zcashanalysis}
-
-todo
-\\
-
-\textbf{A terminology for talking about privacy by data minimization:
-Anonymity, Unlinkability, Undetectability, Unobservability,
-Pseudonymity, and Identity Management} \cite{anonterminology}
-
-General definitions for anonymity terminology like anonymity set etc.  For reference
-\\
-
-\textbf{Anonymity Set} \cite{anonset}
-
-Summary, context, problem, solution, examples of Anonymity sets.
-\\
-
-\textbf{EIP-7503: Zero-Knowledge Wormholes - Private Proof of Burn (PPoB)} \cite{7503}
-
-Popular EIP on base layer privacy.  User burns their eth by sending it to a random address they don’t have the private keys for and in return is minted eth.
-\\
-
-\textbf{A privacy-preserving scheme with multi-level regulation compliance for blockchain} \cite{privacyregulation}
-
-Proposes account based privacy over transactions (inspired by BlockMaze) but some actors in the system are privileged and can reveal any private information.  These privileged actors are suggested to be regulators.  The regulators are able to selectively reveal information in transactions via Attribute Based Encryption (ABE).  ABE is set up in such a way that there is a hierarchy of roles that can reveal information.  For example the “Monitor” can identify suspicious accounts.  The suspicious accounts get passed along and have their transaction history revealed to the “Primary Regulator”.  If it needs to get elevated further, the “Senior regulator” is able to reveal the amounts in the transactions.  A keystone of this paper is the ABE key generation and dispersion.
-Note: very nice related work section.
-\\
-
-\textbf{Confidential ERC20 Framework using Fully Homomorphic Encryption} \cite{circleincoerc20}
-
-todo
-\\
-
-\textbf{A Survey on the Applications of Zero-Knowledge Proofs} \cite{lavin2024surveyapplicationszeroknowledgeproofs}
-
-todo
-\\
-
-\textbf{Ethereum Foundation Treasury Policy} \cite{ethfoundationtreasurypolicy}
-
-Broad overview of EF goals going forward.  States EF is strongly committed to privacy.  “Privacy is historically neglected in the broader DeFi space, but it remains essential. Privacy protects market participants from both digital surveillance (e.g., front running, sandwiching, liquidation sniping, targeted phishing, profiling and data-based coercion) and physical threats (i.e. in-person coercion).”
-\\
-
-\textbf{Original Ethereum Website} \cite{oldethereumwebsite}
-
-“Ethereum is a decentralized platform that runs smart contracts: applications that run exactly as programmed without any possibility of downtime, censorship, fraud or third party interference.”
-\\
-
-\textbf{Hearing Entitled: American Innovation and the Future of Digital Assets} \cite{gopfinancial2025hearing}
-
-Lots of members of the House Financial Service Committee are begging for compliance and note this as a big blocker for adoption.  At 2 hr 24 mins a representative from Illinois makes an impassioned plea for crypto companies to prioritize compliance and to attempt to fight money laundering.
-\\
-
-\textbf{Zero-knowledge proof framework for privacy-preserving financial compliance} \cite{solomka2025zeroknowledge}
-
-Discussed the end to end flow of generating a proof of compliance from a KYC provider which is then verified on-chain to pseudonymously prove compliance when interacting with smart contracts.  Some flaws in the paper, but overall solid ground work that we will be building off.  They go into detail on the relevant background of ZKPs. 
-\\
-
-\textbf{ZEBRA: Anonymous Credentials with Practical On-chain Verification and Applications to KYC in DeFi} \cite{Rathee2022ZEBRAAC}
-
-todo
-\\
-
-\textbf{REGKYC: Supporting Privacy and Compliance Enforcement for KYC in Blockchains} \cite{Xiong2025REGKYCSP}
-
-todo
-\\
-
-\textbf{How to Design a Compliant, Privacy-Preserving Fiat Stablecoin Via Zero-Knowledge Proofs} \cite{gross2022compliant}
-
-todo
-\\
-
-\textbf{zkFi: Privacy-Preserving and Regulation Compliant Transactions using Zero Knowledge Proofs} \cite{chaudhary2025zkfiprivacypreservingregulationcompliant}
-
-Allows for involuntary deanonymization as a reaction to a court order by having both a private key and a view key.  The view key used to decrypt private data for read only purposes.  In any case, we will not allow for involuntary deanonymization.  Ideally, whatever caused the need for deanonmyization would instead prevent the use of compliant applications through the inability to produce a valid compliance proof.
-ZkFi proposes a middleware SDK that handles the anonymization and tokens transactions through a smart contract supporting multiple assets transactions.
-\\
-
-\textbf{Derecho: Privacy Pools with Proof-Carrying Disclosures} \cite{10.1145/3658644.3670270}
-
-Attaches membership proofs to transactions traveling through mixers to prove user membership on an allowlist.  Difficulties arise when transactions are made inside of mixer as well as when non-membership proofs are preferred.
-\\
-
-\textbf{SeDe: Balancing Blockchain Privacy and Regulatory Compliance by Selective De-Anonymization} \cite{chaudhary2025sedebalancingblockchainprivacy}
-
-Haven't read yet but thoughts: I believe it’s the job of the Centralized Exchange to handle de-anonymization.  Simply stopping funds from using compliant applications is sufficient for the on-chain portion without sacrificing fundamental autonomy of the network.  \cite{privacyregulation} also takes a de-anonymization approach
-\\
-
-\textbf{Zerocoin: Anonymous Distributed E-Cash from Bitcoin} \cite{10.1109/SP.2013.34}
-
-Zcash predecessor.  Creates a payment system that unlinks transactions from the payment’s origin, but reveals payments’ destinations and amount.  
-\\
-
-\textbf{Zerocash: Decentralized Anonymous Payments from Bitcoin} \cite{6956581}
-
-Original z-cash paper.  UTXO based privacy system (as opposed to account based).  Each transaction is accompanied by a proof that the ledger remains balanced.  But is its own blockchain.  Only useful as payment rails.  Might be relatively trivial to attach a non-member sanction list proof onto due to it being UTXO. Introduces the term Decentralized Autonomous Payment scheme (DAP scheme).  A DAP scheme (fns Setup, CreateAddress, Mint, Pour, VerifyTransaction, Receive) is secure if it satisfies ledger indistinguishability, transaction non-malleability, and balance.
-
-\textbf{Leder Indistinguishability}:  the ledger reveals no new information to the adversary beyond the publicly-revealed information (values of minted coins, public values, information strings, total number of transactions, etc.)
-
-\textbf{Transaction Non-Malleability}: prevents malicious attackers from modifying others’ transactions before they are added to the ledger
-
-\textbf{Balance}: requires that no bounded adversary A can own more money than what he minted or received via payments from others.
-\\
-
-\textbf{zkMixer: A Configurable Zero-Knowledge Mixer with Proof of Innocence and Anti-Money Laundering Consensus Protocols} \cite{constantinides2025zkmixerconfigurablezeroknowledgemixer}
-
-todo
-\\
-
-\textbf{Public Verifiable Privacy-Preserving Multi-Party Computation on Blockchain
-} \cite{10671422}
-
-todo
-\\
-
-\textbf{A Regulation Scheme Based on the Ciphertext-Policy Hierarchical Attribute-Based Encryption in Bitcoin System} \cite{8314106}
-
-todo
-\\
-
-\textbf{BlockMaze: An Efficient Privacy-Preserving Account-Model Blockchain Based on zk-SNARKs} \cite{9200775}
-
-Haven't read yet but it established a blockchain privacy protection solution based on zk-SNARKs for an account-based model, which was more compatible with smart contracts than ZeroCash.
-\\
-
-\textbf{Blockchain Privacy and Regulatory Compliance: Towards a Practical Equilibrium} \cite{buterin2023blockchain}
-
-Privacy pools paper (Vitalik co-author).  Introduces the concept of associated sets.  Before entering the protocol, a user chooses which addresses to include in its anonymity set.  This gives users freedom to disassociate funds from addresses that are sanctioned: sanctioned addresses can’t benefit from their privacy.  The assumption is that users will only add addresses they trust to the associated sets.  This also will result in 3rd party Association Set curators as a service.  Association sets are an alternative to non-membership proofs.
-\\
-
-\textbf{MEV and the Limits of Scaling} \cite{miller2025mev}
-
-Revealed that private mempools (L2s like base, Unichain) suffer from spam arbitrage bots eating large portions of gas while paying disproportionately low amounts of fees.  Arbitrage bots need to submit transactions to read state since the mempool is private so they spam complex transactions hoping to hit a successful arb.  This is a large market inefficiency.  “An efficient market must provide searchers with real-time access to the transaction flow, while programmatically enforcing restrictions on how they can use that information.  The system needs to be able to verifiably guarantee that a searcher can only backrun transactions and can’t frontrun, sandwich, or leak private data. In turn, this visibility allows searchers to do their conditional execution logic offchain instead of doing so onchain. Once a searcher created a potentially profitable transaction offchain, they still need a way to land it in the precise spot to capture the MEV.”  What is the minimum amount of information to expose in the mempool to allow searchers to perform their computation off-chain?
-\\
-
-\textbf{Proofs that yield nothing but their validity and a methodology of cryptographic protocol design} \cite{4568209}
-
-Original ZKP paper
-\\
-
-\textbf{Blockchain is Watching You: Profiling and Deanonymizing Ethereum Users} \cite{béres2020blockchainwatchingyouprofiling}
-
-The authors apply multiple techniques like statistical analysis, specific ML algorithms, and time-of-day activity to successfully deanonymize Tornadocash users.  Not all privacy is equal, and simply using a mixer doesn't give perfect privacy.
-\\
-
-\textbf{Privacy-Preserving Blockchain Technologies} \cite{s23167172}
-
-todo
-\\
-
-\textbf{ZEXE: Enabling Decentralized Private Computation} \cite{ZEXE}
-
-ZEXE provides a general framework for privacy-preserving
-blockchain applications in which the application state is a system of
-records, transactions create and nullify records, and all records have
-birth and death predicates defining the conditions under which they
-can be created or nullified. Transactions contain zero-knowledge
-proofs that these predicates are satisfied. As the authors note, this
-captures membership proofs of records on allowlists/blocklists as
-a special case (described in detail through a “regulation-friendly
-private stablecoin” example).
-\\
-
-\textbf{Jigsaw: Doubly Private Smart Contracts} \cite{jigsaw}
-
-ZEXE made private smart contracts possible, but struggles when coordination is needed, like in DEXs, voting, or auctions. Jigsaw extends ZEXE with coSNARKs to enable doubly private coordination. Both data and identities stay hidden.
-\\
-
-\textbf{ERC20 Token standard} \cite{ethereum_erc20_2024}
-
-ERC20 token standard.  Nothing new here.
-\\
-
-\textbf{Samourai Wallet Charges Raise Existential Questions for Privacy Tech} \cite{kuhn_samourai_2024}
-
-Monero(?) <-> bitcoin mixer devs get sent to jail.  Bitcoin wallet mixer that also earned fees.  Was open sourced and non-custodial.
-\\
-
-\textbf{US Officials Arrest Alleged Operator of \$336M Bitcoin Mixing Service} \cite{bitcoin_fog_2021}
-
-Bitcoin mixer by Roman Sterlingov operating for 10 years.
-\\
-
-\textbf{Privacy-Protecting Regulatory Solutions Using
-Zero-Knowledge Proofs} \cite{a16z_zkp_privacy_2022}
-
-todo
-\\
+\reminder{joss: How do smart contract wallets interact with this proposed solution?}
 
 \bibliographystyle{abbrv}
 \bibliography{blockchain}

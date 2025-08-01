@@ -1,0 +1,88 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+ \usepackage[tight]{subfigure}
+ \usepackage{amssymb}
+ \usepackage{amsmath}
+ \usepackage{clrscode}
+ \usepackage{hyperref}
+ \usepackage{xcolor}
+ 
+ \usepackage{natbib}
+\setlength{\bibsep}{0.5pt}
+
+\setlength{\oddsidemargin} {0 in}
+\setlength{\textwidth} {6.5 in}
+\setlength{\textheight} {8.5 in}
+\setlength{\topmargin} {-0.5 in}
+\def\h{\hspace{-.9pt}{\_}}
+\newcommand{\reminder}[1]{ [[[ \marginpar{\mbox{$<==$}} #1 ]]] }
+\newcommand{\eatreminders}[0]{\renewcommand{\reminder}[1]{}}
+
+\title{Joss' Brain Dumps}
+\author{Joss Duff}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{About}
+This is for miscellaneous thoughts and writing that...
+\begin{itemize}
+    \item don't fit nicely into the thesis structure
+    \item are outdated
+    \item are a passing thought
+\end{itemize}
+but might come in handy later on.
+
+\section{Joss' idea of compliant privacy endgame}
+Braindump here.  We're creating a system where protocols can op into which regulation they want to be compliant with.  This should give them hands off peace of mind that they won't face charges like Tornado Cash for allowing sanctioned individuals.  The integration shouldn't be much more than requiring a proof validates on an L1 contract provided by the regulatory body that decided on the compliance.  In a world where this pattern is widely adopted, compliant actors will choose to use the compliant protocols and non-compliant actors will be forced to use deployments that don't require compliance.  It's my thesis that for each regulatory body, there are more people who meet the definition of "compliance" than people who aren't "compliant" (in a legal sense).  Many protocols on blockchains greatly benefit from network effects: more people using Uniswap results in better prices on swaps, larger anonymity sets results in better privacy for users.  If my above thesis is correct and there are more compliant individuals than non-compliant AND compliant users will choose to use compliance requiring protocols, the compliance requiring protocols will have many more users and have a stronger network effect (better prices, better privacy, etc) than protocols not requiring any compliance.  Both users and protocols will be rewarded for proving compliance.  This also serves as an economic incentive for both proving and requiring compliance.
+
+\section{Settings for Privacy Protocols}
+There are three main settings for decentralized privacy ledgers.  Base layer/ independent blockchain (Zcash), application on an existing blockchain (UltraAnon, tornadocash), or as an appchain rollup (Hibachi CLOB).  In each setting, a privacy protocol restricted to different properties.  For example, an application is restricted to the visibility of the chain it's on by default for example, public visibility on Ethereum, and additional engineering is required for privacy properties.  Appchain rollups must have a mechanism to periodically inherit trust from their baselayer, which is arguably not yet achieved on Ethereum except for DeGate and Aztec v1.  Base layer privacy implementations have the most freedom but suffer from weaker economic security compared to a mature chain such as Ethereum.
+
+\section{Trust levels of data location}
+In privacy concerned settings, where user information is stored has different trust properties.  For example, on the Ethereum blockchain, information is stored completely trustlessly on-chain however this comes with the property of the information being completely public.  An encryption of some data can be stored instead, but the underlying data must be available from some party to reconstruct the encryption in order to verify (and therefore use) the encryption.  A trustless alternative that still preserves privacy is the Aztec Network's Private Execution Environment (PXE).  Users perform a computation privately and post a proof of the computation's valid state on-chain.  However in this setting the user cannot modify any other public data and is responsible for maintaining the data necessary to reconstruct or verify the proof.  This responsibility can be handed off to a third party like a wallet but this introduces a trust assumption.  Potentially the wallet is fully open source and audited but running remotely (not on your own server or computer).  In the best case scenario the wallet provider doesn't reveal the user data to any other entity, and the worst case is that the provider reveals it to any other entity.  Examine how different data domains are able to reach compliance.  Specifically how the different levels of trustlessness have an effect on proving arbitrary properties over user information and what the bounds of this computation is.  Also consider that not all proofs have to validate on the L1.  If you're interacting with a 3rd party you only have to prove to that 3rd party that your funds are compliant.  But the proof does have to be on the L1 to be transferred.
+
+\section{First Architecture Thoughts}
+
+The most elegant and composable approach for this framework is proposing a new Ethereum Request for Comment (ERC) standard.
+
+When a group of tokens has a proof attached to them they are no longer fungible with the rest of the same type of token as they have the new properties of n associated proofs.  This on-chain distinguishment can be achieved by wrapping the tokens in an NFT (ERC 721) or by wrapping them in a new ERC-20 similar token with the proof property.  The NFT approach mimics a UTXO scheme, which has nice properties for privacy protocols (expand here on how UXTO schemes are easier for privacy protocols and give examples).  When the user proves on some funds, those funds are transferred into an NFT.  The token "balance" of the NFT is publicly viewable as is the proofs that the NFT is constructed with.  This does pose a gas cost concern, as the user is minting a new NFT for every proof.  This is where some benchmarking can come in handy.  Maybe this calls for a new token standard similar to NFTs but exposes a interface like ERC20 where the "balance\_of" function returns the balance of the underlying token.  The owner of the NFT will also have a function that breaks the NFT and returns the tokens into the underlying token.  This will cause the token to lose its proofs but is necessary to participate in defi.  Other necessary functions will become clear when implementation starts.
+
+[Unrelated to architecture, but another concern is that hold proofs in the contract as publicly viewable means that anyone can validate the proofs.  If the proof is a non-membership or a membership proof, this slightly de-anonymizes the user and effectively creates an anonymity set ceiling - they will always at most inherit the anonymity set of this membership or non-membership.  It is the responsibility of the user to monitor their own privacy ceiling when selecting programs to prove on their tokens (ex: don't attach a proof of both your zip code and birth year to a token).  Examine how users can maintain maximum privacy and protect themselves.  What things to look out for etc. Expand more on this concern and give solutions on how the user can maintain full anonyization].
+
+Another approach is a "branching" ERC-20 like contract that groups tokens by the proofs attached to them.  An example: 100 of token A are held by Alice.  Alice attaches a proof to 25 of these tokens with a function `attach\_proof(count)`.  This function will burn 25 of token A and mint her 25 of token A\textsubscript{proof-a}.  
+
+It might be important to lose the proofs on a transfer, as making a transfer could invalidate some of the invariants that were proved.  If this is the case, it is trivial to send the underlying token from either of the above approaches.  But we might still want to know about the tokens past.  Instead of the proof saying "you are not a sanctioned address", it should be semantically saying "the address holding this token here its not a sanctioned address".  Important inferences that can be made using proof history, like if a user from an anon. set sends funds to a sanctioned address sends funds to a sanctioned address.  Also allows for tracing the proof history on an asset.
+
+Base level fungibility with underlying token then a proof-level fungibility.  Introduces a semantical level of fungibility.  
+
+\section{Semantic Fungibility}
+For simplicity, in this section we'll say the subject of compliance is ERC-20 tokens.  This might not apply to other compliance subjects, see section "Compliance subject".  Other possible subjects are groups of transactions, contracts, or addresses.
+
+In this framework the subject should have fungibility with its peers but non-fungible across different ZKPs attached.  This creates fungibility sets where some tokens are fungible with others of the same origin but not all.  
+
+For example: Alice has 100 USDC and proves compliance on 25 of them.  Her balance of USDC is 100.  But to an application that requires only compliant USDC her effective balance is 25.  The compliant USDC are fungible with unproven USDC, but the unproven USDC isn't fungible with compliant USDC.
+
+A more complex example: Alice has 100 USDC: USDC\textsubscript{base} and proves compliance X on 50 of them: USDC\textsubscript{X}.  She then proves compliance Y on 30 tokens: USDC\textsubscript{Y}.  She proved compliance Y on 10 of her USDC\textsubscript{base} and 20 of her USDC\textsubscript{X}.  She still only has 100 USDC, but there is overlap between which can be used fungibly.  
+
+Her effective balances from the perspective of...
+\begin{itemize}
+	\item a protocol that doesn't require any compliance: 100
+	\item a protocol that requries compliance Y: 30 
+	\item a protocol that requries compliance X: 50
+	\item a protocol that requries compliance X and Y: 20
+\end{itemize}
+
+These are her balances of the tokens described in terms of metadata attached: 20 USDC\textsubscript{X and Y and base}, 10 USDC\textsubscript{Y and base}, 30 USDC\textsubscript{X and base}, and 40 USDC\textsubscript{base}.  All 100 of her tokens are fungible with USDC\textsubscript{base}.  Her USDC\textsubscript{X and Y and base} is fungible with USDC\textsubscript{X and base} and USDC\textsubscript{Y and base}.  Her USDC\textsubscript{X and base} is NOT fungible with her USDC\textsubscript{Y and base}.
+
+\section{Compliance subject}
+
+We refer to "subject" as the on-chain item associated with the compliance.  The subject could be a token or NFT, a transaction or group of transactions, a contract, or an address.  Initially the subject was thought to be tokens, or a standard with the ERC-20 token standard.  However an open question is whether tokens should maintain their compliance proof metadata when they are transferred or go through a protocol.  A non-sanctioned address could prove compliance on their tokens then immediately send the tokens to a sanctioned address.  The proof attached to the tokens will still verify, but the invariant is broken because the sanctioned address holds the token.  To solve this, proofs would have to be re-generated on every transfer, which would be expensive and add a flat overhead cost to all token interactions.
+
+Another native compliance subject is addresses themselves.  An address can prove they aren't on a sanction list and as a result be allowed to use certain protocols.  The problem with this approach is that all new addresses start as non-sanctioned and can behave as such until they end up on a sanction list.  In this case, the compliance proof attached needs to be invalidated.  Sanction lists are often updated and forever growing in size.  Our proposed solution should support frequent updates to sanction lists.  Frequent updates is an argument for non-upgradable verifier contracts that have some way of detecting if a compliance criteria has been changed since the last time a proof was generated.  Difficult because the proof is generated off-chain.
+
+
+\bibliographystyle{abbrv}
+\bibliography{blockchain}
+\end{document}

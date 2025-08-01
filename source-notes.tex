@@ -1,0 +1,256 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+ \usepackage[tight]{subfigure}
+ \usepackage{amssymb}
+ \usepackage{amsmath}
+ \usepackage{clrscode}
+ \usepackage{hyperref}
+ \usepackage{xcolor}
+ 
+ \usepackage{natbib}
+\setlength{\bibsep}{0.5pt}
+
+\setlength{\oddsidemargin} {0 in}
+\setlength{\textwidth} {6.5 in}
+\setlength{\textheight} {8.5 in}
+\setlength{\topmargin} {-0.5 in}
+\def\h{\hspace{-.9pt}{\_}}
+\newcommand{\reminder}[1]{ [[[ \marginpar{\mbox{$<==$}} #1 ]]] }
+\newcommand{\eatreminders}[0]{\renewcommand{\reminder}[1]{}}
+
+\title{Source notes}
+\author{Joss Duff}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{About}
+Here I'll put my notes on sources I have or will read through.
+
+\textbf{Tornado Cash Privacy Solution} \cite{tornadocash}
+
+The original privacy mixer that is the catalyst for cryptocurrency compliance discussion in the US and elsewhere.
+\\
+
+\textbf{AvaCloud Ushers in New Era of Blockchain Privacy with Acquisition of EtraPay and Launch of Privacy Suite} \cite{avacloud}
+
+Avalanche acquires privacy company Etrapay.  Claims this will allow privacy through concealing user data while maintaining regulatory compliance.  Mentions FHE.  Avalanche believes there’s a market for compliant privacy preserving applications.
+\\
+
+\textbf{Tornado Cash and Blockchain Privacy: A Primer for Economists and Policymakers} \cite{tornadocashprimer}
+
+Proposes the use of Tornadocash with a compliance non-association proof.  Vendors/financial intermediaries who wish to remain compliant can require a valid proof of non-association for Tornadocash users.  This is referred to as voluntary disclosure.  Malicious Tornadocash users will have to find a vendor that doesn't require a proof.  This is only necessary because Tornadocash doesn't have plausible deniability: it is public which addresses deposited and withdrew from Tornadocash.  
+One issue is that of Third-Party Tainting (dusting).  A depositor can withdraw funds to any address.  A sanctioned individual can withdraw some funds to an address associated with a public entity.  It is illegal to receive funds from sanctioned individuals.  For an observer, there is no way to determine whether the receiving party interacted with the mixer or not; and the receiving party will not be able to prove they were not involved.  
+"An optimal solution will likely lie somewhere between perfect privacy and perfect observability."
+One problem with this approach is that the user will likely have to provide a chain of proofs that go all the way back to the origins of the funds, which is either an CEX onramp, block reward, or sent from another EOA.  This requires a network effect of protocols producing proofs for any balance changing interactions.
+Interesting note: Only 4 addresses deposited and withdrew from the 10,000 USDT tornadocash pool.  This is a very poor anonymity set and it would be trivial to link the deposit and withdrawl addresses based on statistical analysis. \cite{béres2020blockchainwatchingyouprofiling} does an analysis like this to de-anonymize Tornadocash users.
+\\
+
+\textbf{Ultra Anon: An experimental privacy token with maximum plausible deniability and anonymity set which blurs the lines of public and private state} \cite{ultraanon}
+
+Account based privacy scheme that allows for both a public and private balance.  Anonymity set is large, as every user who has had even a public balance contributes to the anonymity set of every private transaction sent.  This is quite viral anonymity, as anyone with a balance can publicly send money to a user without a balance and forcibly add them to the anonymity set.  Another interesting property is full plausible deniability.  For any user with a public balance, it cannot be determined if they have a private balance or not.  Breaks composability as this is a new ERC token standard.
+\\
+
+\textbf{An Empirical Analysis of Anonymity in Zcash} \cite{zcashanalysis}
+
+todo
+\\
+
+\textbf{A terminology for talking about privacy by data minimization:
+Anonymity, Unlinkability, Undetectability, Unobservability,
+Pseudonymity, and Identity Management} \cite{anonterminology}
+
+General definitions for anonymity terminology like anonymity set etc.  For reference
+\\
+
+\textbf{Anonymity Set} \cite{anonset}
+
+Summary, context, problem, solution, examples of Anonymity sets.
+\\
+
+\textbf{EIP-7503: Zero-Knowledge Wormholes - Private Proof of Burn (PPoB)} \cite{7503}
+
+Popular EIP on base layer privacy.  User burns their eth by sending it to a random address they don’t have the private keys for and in return is minted eth.
+\\
+
+\textbf{A privacy-preserving scheme with multi-level regulation compliance for blockchain} \cite{privacyregulation}
+
+Proposes account based privacy over transactions (inspired by BlockMaze) but some actors in the system are privileged and can reveal any private information.  These privileged actors are suggested to be regulators.  The regulators are able to selectively reveal information in transactions via Attribute Based Encryption (ABE).  ABE is set up in such a way that there is a hierarchy of roles that can reveal information.  For example the “Monitor” can identify suspicious accounts.  The suspicious accounts get passed along and have their transaction history revealed to the “Primary Regulator”.  If it needs to get elevated further, the “Senior regulator” is able to reveal the amounts in the transactions.  A keystone of this paper is the ABE key generation and dispersion.
+Note: very nice related work section.
+\\
+
+\textbf{Confidential ERC20 Framework using Fully Homomorphic Encryption} \cite{circleincoerc20}
+
+todo
+\\
+
+\textbf{A Survey on the Applications of Zero-Knowledge Proofs} \cite{lavin2024surveyapplicationszeroknowledgeproofs}
+
+todo
+\\
+
+\textbf{Ethereum Foundation Treasury Policy} \cite{ethfoundationtreasurypolicy}
+
+Broad overview of EF goals going forward.  States EF is strongly committed to privacy.  “Privacy is historically neglected in the broader DeFi space, but it remains essential. Privacy protects market participants from both digital surveillance (e.g., front running, sandwiching, liquidation sniping, targeted phishing, profiling and data-based coercion) and physical threats (i.e. in-person coercion).”
+\\
+
+\textbf{Original Ethereum Website} \cite{oldethereumwebsite}
+
+“Ethereum is a decentralized platform that runs smart contracts: applications that run exactly as programmed without any possibility of downtime, censorship, fraud or third party interference.”
+\\
+
+\textbf{Hearing Entitled: American Innovation and the Future of Digital Assets} \cite{gopfinancial2025hearing}
+
+Lots of members of the House Financial Service Committee are begging for compliance and note this as a big blocker for adoption.  At 2 hr 24 mins a representative from Illinois makes an impassioned plea for crypto companies to prioritize compliance and to attempt to fight money laundering.
+\\
+
+\textbf{Zero-knowledge proof framework for privacy-preserving financial compliance} \cite{solomka2025zeroknowledge}
+
+Discussed the end to end flow of generating a proof of compliance from a KYC provider which is then verified on-chain to pseudonymously prove compliance when interacting with smart contracts.  Some flaws in the paper, but overall solid ground work that we will be building off.  They go into detail on the relevant background of ZKPs. 
+\\
+
+\textbf{ZEBRA: Anonymous Credentials with Practical On-chain Verification and Applications to KYC in DeFi} \cite{Rathee2022ZEBRAAC}
+
+todo
+\\
+
+\textbf{REGKYC: Supporting Privacy and Compliance Enforcement for KYC in Blockchains} \cite{Xiong2025REGKYCSP}
+
+They have a nice approach of maintaining compliance and privacy.  Basically, a user gets a proof of compliance from a CEX (or other entity) and then sends their funds to a Tornado Cash style mixer that requires a signature of the compliance proof.  Then the user can withdraw from the mixer to a new address, unlinking their address and becoming anonymous but with the transaction history of depositing into a compliance requiring mixer.  Applications can then require user funds come from X, Y, or Z compliance mixers.  I disregarded the parts about deanonymization because this mechanism can be thought of without it.
+
+It doesn't seem like they thought about updating compliance criteria and it also requires users to interact with specific mixers.  It's less generic than we're hoping for but still an interesting solution.  
+\\
+
+\textbf{How to Design a Compliant, Privacy-Preserving Fiat Stablecoin Via Zero-Knowledge Proofs} \cite{gross2022compliant}
+
+todo
+\\
+
+\textbf{zkFi: Privacy-Preserving and Regulation Compliant Transactions using Zero Knowledge Proofs} \cite{chaudhary2025zkfiprivacypreservingregulationcompliant}
+
+Allows for involuntary deanonymization as a reaction to a court order by having both a private key and a view key.  The view key used to decrypt private data for read only purposes.  In any case, we will not allow for involuntary deanonymization.  Ideally, whatever caused the need for deanonmyization would instead prevent the use of compliant applications through the inability to produce a valid compliance proof.
+ZkFi proposes a middleware SDK that handles the anonymization and tokens transactions through a smart contract supporting multiple assets transactions.
+\\
+
+\textbf{Derecho: Privacy Pools with Proof-Carrying Disclosures} \cite{10.1145/3658644.3670270}
+
+Attaches membership proofs to transactions traveling through mixers to prove user membership on an allowlist.  Difficulties arise when transactions are made inside of mixer as well as when non-membership proofs are preferred.
+"institutions could use to request cryptographic attestations of fund origins rather than naively rejecting all funds coming from privacy pools."  "Derecho is backwards-compatible with existing Ethereum privacy pool designs, adds no overhead in gas costs, and costs users only a few seconds to produce attestations."
+\\
+
+\textbf{SeDe: Balancing Blockchain Privacy and Regulatory Compliance by Selective De-Anonymization} \cite{chaudhary2025sedebalancingblockchainprivacy}
+
+Haven't read yet but thoughts: I believe it’s the job of the Centralized Exchange to handle de-anonymization.  Simply stopping funds from using compliant applications is sufficient for the on-chain portion without sacrificing fundamental autonomy of the network.  \cite{privacyregulation} also takes a de-anonymization approach
+\\
+
+\textbf{Zerocoin: Anonymous Distributed E-Cash from Bitcoin} \cite{10.1109/SP.2013.34}
+
+Zcash predecessor.  Creates a payment system that unlinks transactions from the payment’s origin, but reveals payments’ destinations and amount.  
+\\
+
+\textbf{Zerocash: Decentralized Anonymous Payments from Bitcoin} \cite{6956581}
+
+Original z-cash paper.  UTXO based privacy system (as opposed to account based).  Each transaction is accompanied by a proof that the ledger remains balanced.  But is its own blockchain.  Only useful as payment rails.  Might be relatively trivial to attach a non-member sanction list proof onto due to it being UTXO. Introduces the term Decentralized Autonomous Payment scheme (DAP scheme).  A DAP scheme (fns Setup, CreateAddress, Mint, Pour, VerifyTransaction, Receive) is secure if it satisfies ledger indistinguishability, transaction non-malleability, and balance.
+
+\textbf{Leder Indistinguishability}:  the ledger reveals no new information to the adversary beyond the publicly-revealed information (values of minted coins, public values, information strings, total number of transactions, etc.)
+
+\textbf{Transaction Non-Malleability}: prevents malicious attackers from modifying others’ transactions before they are added to the ledger
+
+\textbf{Balance}: requires that no bounded adversary A can own more money than what he minted or received via payments from others.
+\\
+
+\textbf{zkMixer: A Configurable Zero-Knowledge Mixer with Proof of Innocence and Anti-Money Laundering Consensus Protocols} \cite{constantinides2025zkmixerconfigurablezeroknowledgemixer}
+
+todo
+\\
+
+\textbf{Public Verifiable Privacy-Preserving Multi-Party Computation on Blockchain
+} \cite{10671422}
+
+todo
+\\
+
+\textbf{A Regulation Scheme Based on the Ciphertext-Policy Hierarchical Attribute-Based Encryption in Bitcoin System} \cite{8314106}
+
+todo
+\\
+
+\textbf{BlockMaze: An Efficient Privacy-Preserving Account-Model Blockchain Based on zk-SNARKs} \cite{9200775}
+
+Haven't read yet but it established a blockchain privacy protection solution based on zk-SNARKs for an account-based model, which was more compatible with smart contracts than ZeroCash.
+\\
+
+\textbf{Blockchain Privacy and Regulatory Compliance: Towards a Practical Equilibrium} \cite{buterin2023blockchain}
+
+Privacy pools paper (Vitalik co-author).  Introduces the concept of associated sets.  Before entering the protocol, a user chooses which addresses to include in its anonymity set.  This gives users freedom to disassociate funds from addresses that are sanctioned: sanctioned addresses can’t benefit from their privacy.  The assumption is that users will only add addresses they trust to the associated sets.  This also will result in 3rd party Association Set curators as a service.  Association sets are an alternative to non-membership proofs.
+\\
+
+\textbf{MEV and the Limits of Scaling} \cite{miller2025mev}
+
+Revealed that private mempools (L2s like base, Unichain) suffer from spam arbitrage bots eating large portions of gas while paying disproportionately low amounts of fees.  Arbitrage bots need to submit transactions to read state since the mempool is private so they spam complex transactions hoping to hit a successful arb.  This is a large market inefficiency.  “An efficient market must provide searchers with real-time access to the transaction flow, while programmatically enforcing restrictions on how they can use that information.  The system needs to be able to verifiably guarantee that a searcher can only backrun transactions and can’t frontrun, sandwich, or leak private data. In turn, this visibility allows searchers to do their conditional execution logic offchain instead of doing so onchain. Once a searcher created a potentially profitable transaction offchain, they still need a way to land it in the precise spot to capture the MEV.”  What is the minimum amount of information to expose in the mempool to allow searchers to perform their computation off-chain?
+\\
+
+\textbf{Proofs that yield nothing but their validity and a methodology of cryptographic protocol design} \cite{4568209}
+
+Original ZKP paper
+\\
+
+\textbf{Blockchain is Watching You: Profiling and Deanonymizing Ethereum Users} \cite{béres2020blockchainwatchingyouprofiling}
+
+The authors apply multiple techniques like statistical analysis, specific ML algorithms, and time-of-day activity to successfully deanonymize Tornadocash users.  Not all privacy is equal, and simply using a mixer doesn't give perfect privacy.
+\\
+
+\textbf{Privacy-Preserving Blockchain Technologies} \cite{s23167172}
+
+todo
+\\
+
+\textbf{ZEXE: Enabling Decentralized Private Computation} \cite{ZEXE}
+
+ZEXE provides a general framework for privacy-preserving
+blockchain applications in which the application state is a system of
+records, transactions create and nullify records, and all records have
+birth and death predicates defining the conditions under which they
+can be created or nullified. Transactions contain zero-knowledge
+proofs that these predicates are satisfied. As the authors note, this
+captures membership proofs of records on allowlists/blocklists as
+a special case (described in detail through a “regulation-friendly
+private stablecoin” example).
+\\
+
+\textbf{Jigsaw: Doubly Private Smart Contracts} \cite{jigsaw}
+
+ZEXE made private smart contracts possible, but struggles when coordination is needed, like in DEXs, voting, or auctions. Jigsaw extends ZEXE with coSNARKs to enable doubly private coordination. Both data and identities stay hidden.
+\\
+
+\textbf{ERC20 Token standard} \cite{ethereum_erc20_2024}
+
+ERC20 token standard.  Nothing new here.
+\\
+
+\textbf{Samourai Wallet Charges Raise Existential Questions for Privacy Tech} \cite{kuhn_samourai_2024}
+
+Monero(?) <-> bitcoin mixer devs get sent to jail.  Bitcoin wallet mixer that also earned fees.  Was open sourced and non-custodial.
+\\
+
+\textbf{US Officials Arrest Alleged Operator of \$336M Bitcoin Mixing Service} \cite{bitcoin_fog_2021}
+
+Bitcoin mixer by Roman Sterlingov operating for 10 years.
+\\
+
+\textbf{Privacy-Protecting Regulatory Solutions Using
+Zero-Knowledge Proofs} \cite{a16z_zkp_privacy_2022}
+
+todo
+\\
+
+\textbf{Strengthening American Leadership in Digital Financial Technology} \cite{whitehouse2025digital}
+
+White house report on digital assets.  Mentions how ZK proofs can be used to protect user privacy while maintaining compliance.
+\\
+
+
+\bibliographystyle{abbrv}
+\bibliography{blockchain}
+\end{document}
