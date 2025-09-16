@@ -250,6 +250,67 @@ todo
 White house report on digital assets.  Mentions how ZK proofs can be used to protect user privacy while maintaining compliance.
 \\
 
+\textbf{Peanut Butter \& Watermelon: Financial Privacy in the Digital Age } \cite{peirce2025peanut}
+
+SEC commissioner gave a speech on financial privacy at a Science of Blockchain conference that advocates for financial disintermediation and privacy "we should welcome privacy-protecting technologies".  She briefly talks about how ZK can be used and even referenced Phil Zimmermann's PGP.  Good section:
+"Zero-knowledge proofs allow a person to prove who she is or something about her (such as her age) without requiring her to share her private information. Privacy pools and mixers enable a person to keep private her compensation, her donations to charity, her associations with political or religious organizations,[41] and her purchases. "
+\\
+
+\textbf{Permissioned DeFi goes live with Aave Arc + Fireblocks} \cite{evans2022permissioned}
+
+DeFi liquidity market designed to be compliant with AML regulations, with all participating institutions required to undergo Know Your Customer (KYC) verification. A separate deployment of the Aave V2 liquidity pool for institutional players.
+\\
+
+\textbf{What is Predicate Programmable policy enforcement for financial applications built on blockchains} \cite{predicate2025intro}
+
+"Send transaction data to our REST API to receive a cryptographic attestation that reflects whether the request meets your configured rules."  Offchain computation to an API means a trust assumption which we can't have.  Apparently they're an aggregator for other compliance companies.
+
+\textbf{L2 Ethereum ZK Rollup for Private and Compliant Transactions} \cite{payywhitepaper}
+UTXO Zcash based private L2.  Unclear if it's a polygon or Ethereum rollup.  The title and first diagram says polygon but the rest of the paper references Ethereum.  Relies on it's decentralized sequencer / prover network.  They don't currently have smart contracts.
+
+"clients generating relevant proofs that their activity has been compliant, so called “Proof of Innocence”."
+
+Compliance is defined at the PROTOCOL level:
+
+a number of different mechanisms for enforcing compliance on the
+network:
+1. Transaction lineage - tracking of full or partial transaction lineage, so that
+illicit funds can be tracked and disabled across the network. Transaction
+details are still private.   Each note carries a history of it's transaction lineage.  Only the holder of the note knows the lineage, it's not public.  Transaction lineage only goes back so far, for example 1 year.
+2. Privacy pools - bundling transactions and actors into pools of good and or
+bad actors and treating them as a single entity
+3. Compliance ZK proofs - enable us to hide information while proving specific
+compliance constraints.  This is basically what we're doing!  But for a non UTXO setting
+
+todo
+\\
+
+\textbf{TradFi Tomorrow: DeFi and the Rise of Extensible Finance} \cite{paradigm2025tradfi}
+
+Paradigm survey of 300 traditional finance companies about their blockchain sentiment.  For the survey question "What factors are holding your organization back from being more involved in Blockchain / DeFi", 155 out of 300 (~52\%) checked "Regulatory uncertainty, fragmentation, or lack of clarity" and 150 out of 300 (50) checked "Lack of privacy and/or concerns about transparency".  These were \#2 and \#3 of the largest blocking factors, following "Perceived risks (e.g. security, volatility)" with 184.
+
+Some companies surveyed include Fidelity, VanEck, CME Group, BNY Mellon, Broadridge, Blackrock, J.P. Morgan, and Visa.
+\\
+
+\textbf{Bank Secrecy Act} \cite{usc31_5318h}
+
+BSA / AML law.  U.S. law requiring financial institutions in the United States to assist U.S. government agencies in detecting and preventing money laundering.[1] Specifically, the act requires financial institutions to keep records of cash purchases of negotiable instruments, file reports if the daily aggregate exceeds \$10,000, and report suspicious activity that may signify money laundering, tax evasion, or other criminal activities.
+\\
+
+\textbf{Arc: An open Layer-1 blockchain purpose-built for stablecoin finance} \cite{circlearc}
+
+Circle L1 focusing on stablecoin payments.  Arc allows for "opt-in privacy" see section "Privacy: A Roadmap for Compliant Finance".  Arc will launch with confidential transfers which hides transfer amounts but not sender and receiver.  They also allow for selective disclosure through mechanisms like "view keys", which grant authorized third parties, such as auditors or regulators, read-only access to specific transaction data.  Also, institutions always have full visibility of their customers on-chain.  This is deanonymization.
+
+\textbf{Tempo: The blockchain designed for payments website} \cite{tempo2025}
+
+Stripe x Paradigm L1 focusing on stablecoin payments.  No whitepaper out yet but they have some compliance x privacy solutions noted on their website. "Built-in privacy measures: Protect your users by keeping important transaction details private while maintaining compliance standards.", and "Blocklists / allowlists: Meet compliance standards by setting user-level permissions for transactions."
+
+\\
+
+\textbf{Shielding Applications from an Untrusted Cloud with Haven} \cite{haventee}
+
+Paper introducing the trustless computing environment referred to as TEEs.
+\\
 
 \bibliographystyle{abbrv}
 \bibliography{blockchain}
