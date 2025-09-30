@@ -99,6 +99,27 @@ We'll examine these compliance proofs specifically in private settings, as that 
 \section{Framing this}
 It's hard to give a punchy elevator pitch for this because it's so abstract with broad applications.  One idea that I just had: a way to let smart contracts assert properties of an addresses's transaction history.  It's like smart contracts that are actually contracts.  More like "dumb contracts" cause they can just assert a constraint is true.
 
+\section{insight}
+A key insight to this thesis is that multiple applications will have the same definition of compliance.  Or, if not the same exact definition of compliance, there will be many shared logical building blocks.
+
+\section{Example I'm not using but I didn't want to just delete}
+\paragraph{Example}
+An application wishes to be compliant with two regulatory bodies.  These regulatory bodies have published compliance definitions $R_1$ and $R_2$, respectively.  The application requires users to supply a valid proof of $R_1$ and $R_2$.  $R_1$ and $R_2$ are composed of simple constraints:
+
+$$C_{\text{1}} = (\text{sender}(\text{txn}) \notin A, B_{\text{current}})$$
+$$C_{\text{2}} = (\text{sender}(\text{txn}) \notin A, B_{\text{previous}})$$
+
+Compliance definition $R_1$ only requires that the sender isn't currently in sanction list $A$:
+$$R_1 = C_1$$
+
+Compliance definition $R_2$ requires that the sender wasn't in sanction list $A$ at the current block or the previous block, as the input $A$ can be updated by the regulation author: 
+
+\reminder{Joss: $A$ should be on-chain, so $B_{\text{previous}}$ could be referencing a different $A$ than the $A$ at the current block.  This is something I need to expand upon.  Or maybe I just need to separate which inputs come from chain-data at the time of proof verification and which inputs come from the user}
+
+$$R_1 = C_1 \land C_2$$
+
+A user of the application only needs to compute a proof for $R_1$ because it's constraints are a super-set of the constraints used in $R_2$: proving $R_1$ also proves $R_2$.
+
 \bibliographystyle{abbrv}
 \bibliography{blockchain}
 \end{document}

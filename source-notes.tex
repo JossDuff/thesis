@@ -135,7 +135,7 @@ ZkFi proposes a middleware SDK that handles the anonymization and tokens transac
 
 \textbf{Derecho: Privacy Pools with Proof-Carrying Disclosures} \cite{10.1145/3658644.3670270}
 
-Attaches membership proofs to transactions traveling through mixers to prove user membership on an allowlist.  Difficulties arise when transactions are made inside of mixer as well as when non-membership proofs are preferred.
+Attaches membership proofs to transactions traveling through mixers to prove user membership on an allowlist.  Difficulties arise when transactions are made inside of mixer as well as when non-membership proofs are preferred.  We can possibly extend this to carrying constraints though privacy pools.
 "institutions could use to request cryptographic attestations of fund origins rather than naively rejecting all funds coming from privacy pools."  "Derecho is backwards-compatible with existing Ethereum privacy pool designs, adds no overhead in gas costs, and costs users only a few seconds to produce attestations."
 \\
 
@@ -264,6 +264,7 @@ DeFi liquidity market designed to be compliant with AML regulations, with all pa
 \textbf{What is Predicate Programmable policy enforcement for financial applications built on blockchains} \cite{predicate2025intro}
 
 "Send transaction data to our REST API to receive a cryptographic attestation that reflects whether the request meets your configured rules."  Offchain computation to an API means a trust assumption which we can't have.  Apparently they're an aggregator for other compliance companies.
+\\
 
 \textbf{L2 Ethereum ZK Rollup for Private and Compliant Transactions} \cite{payywhitepaper}
 UTXO Zcash based private L2.  Unclear if it's a polygon or Ethereum rollup.  The title and first diagram says polygon but the rest of the paper references Ethereum.  Relies on it's decentralized sequencer / prover network.  They don't currently have smart contracts.
@@ -282,7 +283,6 @@ bad actors and treating them as a single entity
 3. Compliance ZK proofs - enable us to hide information while proving specific
 compliance constraints.  This is basically what we're doing!  But for a non UTXO setting
 
-todo
 \\
 
 \textbf{TradFi Tomorrow: DeFi and the Rise of Extensible Finance} \cite{paradigm2025tradfi}
@@ -304,12 +304,23 @@ Circle L1 focusing on stablecoin payments.  Arc allows for "opt-in privacy" see 
 \textbf{Tempo: The blockchain designed for payments website} \cite{tempo2025}
 
 Stripe x Paradigm L1 focusing on stablecoin payments.  No whitepaper out yet but they have some compliance x privacy solutions noted on their website. "Built-in privacy measures: Protect your users by keeping important transaction details private while maintaining compliance standards.", and "Blocklists / allowlists: Meet compliance standards by setting user-level permissions for transactions."
-
 \\
 
 \textbf{Shielding Applications from an Untrusted Cloud with Haven} \cite{haventee}
 
 Paper introducing the trustless computing environment referred to as TEEs.
+\\
+
+\textbf{Former Twitter employee sentenced to more than three years in prison for spying for Saudi Arabia} \cite{collier2022twitter}
+\textbf{Twitter Insiders Allegedly Spied for Saudi Arabia} \cite{newman2019twitter}
+\textbf{FCC fines major telcos for selling users’ location data} \cite{daws2024fcc}
+\textbf{China-linked hackers stole wiretap data from telcos, FBI and CISA say} \cite{sakellariadis2024china}
+\textbf{Exclusive: Massive data leak potentially exposes Ukrainian IDs to Russian intelligence, hackers} \cite{post2025ukraine}
+\textbf{Shanghai police database leak} \cite{wikipedia2025shanghai}
+\\
+
+\textbf{An Empirical Analysis of Traceability in the Monero Blockchain} \cite{moneroanalysis}
+Empirical analysis of anonymity in Monero.  Similar to Zcash analysis.
 \\
 
 \bibliographystyle{abbrv}
