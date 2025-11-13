@@ -1,0 +1,897 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+ \usepackage[tight]{subfigure}
+ \usepackage{tikz}
+ \usetikzlibrary{shapes, arrows, positioning, fit, backgrounds}
+ \usepackage{amssymb}
+ \usepackage{amsmath}
+ \usepackage{clrscode3e}
+ \usepackage{hyperref}
+ \usepackage{xcolor}
+ 
+ \usepackage{natbib}
+\setlength{\bibsep}{0.5pt}
+
+\setlength{\oddsidemargin} {0 in}
+\setlength{\textwidth} {6.5 in}
+\setlength{\textheight} {8.5 in}
+\setlength{\topmargin} {-0.5 in}
+\def\h{\hspace{-.9pt}{\_}}
+\newcommand{\reminder}[1]{ [[[ \marginpar{\mbox{$<==$}} #1 ]]] }
+\newcommand{\eatreminders}[0]{\renewcommand{\reminder}[1]{}}
+
+\title{Privacy Preserving Compliance}
+\author{Joss Duff}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Abstract}
+\reminder{Joss: A better first sentence is either the ``privacy and compliance are classically opposed" or the negative outcomes of privacy without compliance and compliance systems without privacy}
+We present a framework for a composable privacy-preserving compliance ecosystem.  In this framework, regulatory bodies publish definitions of compliance over any on-chain data: non-association checks, address-history assertions, protocol-interaction requirements, etc.  Applications select appropriate compliance definitions and require users to prove compliance on-chain before onboarding to the application.  This fulfills dual goals: regulators pushing for compliance and applications/users seeking precise compliance definitions, all without compromising privacy.  
+\reminder{HFK: those are constituencies, not goals.  Goal is more like ``facilitating compliance while maximizing privacy; encouraging publication of clearly stated regulations''}
+
+We present the fundamental building blocks of \textit{compliance definitions} and \textit{constraints}, and discuss how to leverage them to create a novel \textit{domain specific language} (DSL) that intelligently minimizes the computation necessary to prove compliance in this framework.
+\reminder{HFK: took out the future work thing here - it suggests the best stuff comes only later.  The thesis does in fact ``discuss.''}
+
+\section{Background and Definitions}
+Background information on blockchains, privacy systems on blockchains, zero knowledge proofs, and our working definition of ``compliance".  People familiar with blockchain and ZK can skip this section.
+
+\subsection{Blockchain Background}
+Blockchains are fundamentally data-storage systems with unique properties.  Most importantly, data stored on a blockchain (\textit{``on-chain"}) is \textit{immutable}: its history cannot be changed.  This property is achieved by allowing anyone\footnote{There is a small class of ``permissioned" blockchains that only allow whitelisted individuals to participate in consensus and validation.} around the world to participate in consensus and validation of the blockchain's state by running a node.  
+
+The first blockchain, Bitcoin, was created in 2008 and proposed a trustless ledger of transaction histories \cite{Bitcoin}.  Ethereum was created in 2013 and improved on Bitcoin by allowing trustless execution of Turing-complete logic on-chain, referred to as \textit{smart contracts} \cite{Buterin13}.  This allowed for more complex applications like marketplaces and lending platforms to exist in a decentralized, permissionless, and immutable setting. 
+
+Every transaction on a blockchain has a nonstatic monetary cost paid to the block-producing node as an incentive to include the transaction in the next write.  Some blockchains with smart contract support, like Ethereum, include an additional transaction cost driven by the complexity of the smart contract logic being executed.  
+
+Users on blockchains are represented by a public-key address.  The user signs messages and transactions with the associated private key.  Users can have multiple public-key addresses.  It is impossible to reveal who is associated with a public key until the user reveals their identity.
+\reminder{HFK: either directly, or indirectly by accessing the public key
+via an off-chain device or service.}
+
+A centralized exchange (\textit{``CEX"}) is a company that allows users to trade traditional currency for cryptocurrency.  They often require the user to connect their bank account and supply regulatory documentation such as identification cards and proof of residency.  This is a common method for acquiring cryptocurrency.  CEXs are \textit{custodial} which means they control the address (they know the private key) that owns the cryptocurrency on-chain and allow the user to trade or transfer it.  They allow users to send their cryptocurrency from the CEX account to the users' own on-chain address.  CEX accounts are not addresses.  Rather, the CEX keeps its own addresses and the user's holdings are only an accounting record in the CEX's books.
+
+\reminder{HFK: I know we have CEXs here for proof of source of funds.  But for the intro, I'd add a DEX paragraph.  }
+
+\subsection{Privacy in the Blockchain Setting}
+All data on blockchains are public by default unless the chain supports special privacy features; for example, Aztec Network supports private state.  There are also some enterprise permissioned blockchains that restrict visibility levels.  However, the vast majority of chains are public by default, including Ethereum and Bitcoin.
+
+For public blockchains, every user's entire transaction history is exposed to the world.  This is obviously undesirable for consumers.  Most people don't want their purchase or subscription history visible to the entire world.  Many applications and protocols exist to provide users varying degrees of privacy.
+
+Blockchain privacy protocols fall into two broad categories: 
+\begin{itemize}
+    \item \textit{App-layer privacy}: Applications on top of existing blockchains.
+    \item \textit{Base-layer privacy}: Entirely new blockchain architectures with privacy as a core identity.
+\end{itemize}
+
+\subsubsection{App-layer privacy}
+CoinJoin was the first permissionless app-layer transaction mixer~\cite{maxwell2013coinjoin}.  CoinJoin was on Bitcoin and combined multiple input UTXOs from different parties into multiple outputs, obscuring which inputs correspond to which outputs.  Tornado Cash was the first transaction mixer to use ZK proofs~\cite{tornadocash}, and saw massive popularity~\cite{defillama2025tornado}.  The black-hat group Lazarus user Torando Cash to launder stolen funds and the Tornado Cash developers were put on trial~\cite{doj_tornado_cash_2023}.  Railgun is a transaction mixer that focuses on compliance~\cite{railgun}.  Privacy Pools is a recent transaction mixer that also focuses on compliance with Association Sets~\cite{buterin2023blockchain}.  Ultra-Anon is an experimental privacy token that has the property of \textit{plausible deniability}: it isn't revealed if users utilized privacy~\cite{ultraanon}.  Stealth addresses are ephemeral public keys that can receive any tokens while hiding the receiver address~\cite{buterin2023stealth}.  zkBob is a wallet that has private transfer for certain stablecoins~\cite{zkbob2023overview}.  Webb Protocol requires specific interface contracts to be deployed on multiple chains and results in a cross-chain anonymity set~\cite{webbprotocol}.  Worm is an application implementation of ``EIP-7503: Zero-Knowledge Wormholes"~\cite{7503}, which is another transactional privacy solution with the property of plausible deniability.
+
+\subsubsection{Base-layer privacy}
+Zcash is a privacy ledger based on Bitcoin's Unspent Transaction Output (UTXO) model.  Zcash is implemented from the 2014 Zerocash paper~\cite{ZcashWhitepaper} and is one of the earliest private blockchains.  Monero is another of the earliest private blockchains and similarly leverages the UTXO system.  Monero is based on the 2013 CryptoNote paper~\cite{cryptonote}.  Aztec is a general purpose blockchain that allows for private state with smart contract support \cite{aztecprotocol}.  Aleo~\cite{aleo2025homepage}, based on the 2018 paper ``ZEXE: Enabling Decentralized Private Computation"~\cite{ZEXE}, is also a blockchain with private state and smart contracts.  The Miden blockchain supports the private state similarly~\cite{miden2024web}.  Penumbra is a private network and decentralized exchange for the Cosmos ecosystem~\cite{penumbraprotocol}.  Arc~\cite{circlearc} and Tempo~\cite{tempo2025}, founded by Circle and Stripe, respectively, are stablecoin-focused blockchains with some degrees of transaction privacy.
+
+TODO: mimblewimble, secret network, Iron fish?, neptune cash, anoma, payy, \reminder{HFK: not sure if this is too early to say, but Aztec is not really base-layer since it is L2.  We might want to let that go in an intro section, but my suggestion that is that we put in a footnote at least regarding L2}
+
+\subsubsection{Custodial mixers}
+\textit{Custodial mixers} are transaction privacy solutions that require users to send funds to a trusted intermediary who then redistributes the funds.  This accomplishes the privacy goal of breaking the traceability between the input and output transaction, but custodial mixers have the major weakness that operators could steal funds or keep records.  This is fundamentally weaker privacy because two parties have knowledge of a user's transaction history, rather than just the user themselves\reminder{the plural gender correctness nails us badly here since it suggests two users.  Here is a way to work about that without the he/she approach: ``because that intermediary has knowledge of a user's transaction history, rather than that history being private and held only by the user''} .  Centralized exchanges can be used as custodial mixers.
+
+\reminder{Joss: TODO some custodial mixer examples.  2 is enough}
+
+\reminder{HFK: While this is not a legal document, we might note that in some jurisdiction, the intermediary could be subject to government subpoena}
+
+\subsubsection{Anonymity Set}
+An \textit{anonymity set} is the group of entities among which an observer cannot reliably identify which specific entity possesses a particular attribute or performed a particular action~\cite{anonterminology,anonset}.  Anonymity scales with set size: the larger the anonymity set, the less identifiable each entity is~\cite{Dingledine2006AnonymityLC}.
+
+For transaction-mixer applications on blockchains, any address that has deposited can withdraw, but it is never revealed which depositing addresses have an associated withdrawal.  Each withdrawal could have come from any of the depositing addresses.  Therefore, the anonymity set of any given withdrawal from the mixer is the set of all addresses that have deposited in the mixer.  This is oversimplified, and in practice anonymity sets can be reduced with chain analysis~\cite{zcashanalysis,moneroanalysis}.  Anonymity here is referring to the obfuscation of the link between a depositing and withdrawing address.
+
+\subsection{Zero Knowledge Proof}
+Zero Knowledge (ZK) proofs are a cryptographic technique that allows a party to prove specific claims about a computation without revealing any additional information about the computation.  The origins of this concept
+predate blockchain~\cite{ZK88,ZK-origins}, but it was described elegantly and simply by Vitalik Buterin in~\cite{buterin2023blockchain}
+as follows:
+\begin{quote}
+The ``claim'' proven by a ZK proof is expressed as a type of program that is often called a \textit{circuit}.  Mathematically, it suffices to think of it as a function $f(x, w) \rightarrow \{\text{True}, \text{False}\}$, where $x$ is the public input, $w$ is the private input, and $f(\cdot)$ is the function being computed. A ZK proof proves that, for a given $x$ known both by the prover and the verifier, the prover knows a $w$ such that $f(x, w)$ returns $\text{True}$.  
+\end{quote}
+
+
+SNARKs are a specific type of ZK proof that has the unique property of \textit{succinctness}: The proof size doesn't grow with the size of the computation, and the proof can be verified very quickly relative to the computation~\cite{Petkus}.\footnote{The SNARK acronym comes from Succinct, Non-interactive ARguments of Knowledge. The non-interactive term serves to distinguish SNARKs from the interactive proofs between a prover and a verifier that are often used to illustrate the concept of zero knowledge for a general audience.}
+
+A drawback with some SNARK schemes, such as Groth16~\cite{Groth:2016}, is that they rely on a \textit{trusted setup}: a time-intensive ceremony involving multiple participants.  A trusted setup needs to be performed once per circuit~\cite{lavin2024surveyapplicationszeroknowledgeproofs} for Groth16 and some other SNARKs.
+
+A type of SNARK proofs, PLONK, mitigates this drawback by allowing trusted setups to be re-used across circuits.  With PLONK proofs, it is not necessary to initiate a new trusted setup for every new circuit~\cite{Gabizon2019PLONKPO}.
+
+\subsection{Compliance}
+\textit{Compliance} is referred to as the goals and properties of a system to attempt to adhere to a law or policy.  Compliance isn't immunity from prosecution, it is a best effort to prove legality of actions.  For example, US companies have systems in place to prevent money laundering in order to be compliant with the US Bank Secrecy Act (BSA) - also referred to as Anti-Money Laundering (AML)~\cite{usc31_5318h}.  A typical effort to comply with AML in the blockchain space is blocking addresses associated with sanctioned individuals from interacting with a protocol.  
+
+A goal of this framework is to be flexible enough to accommodate compliance definitions over all aspects of a transaction: the payer, the payee, the content of the transaction, and even the actors' transaction histories.  Flexibility results in the ability to express any definition of compliance.
+
+\section{Problem} 
+Blockchains are fundamentally pseudonymous and public: user identities are obfuscated behind addresses, but all activity between addresses is public by default.  In practice, entities are able to associate identities to addresses when on-ramping traditional funds to cryptocurrency and therefore track individuals' flows of funds on-chain.  In order for cryptocurrency to be practical for consumers, it must at the very least have the same level of privacy as traditional finance.  In traditional finance typically two entities know information about a user's funds; the user themself and the exchange that is custodian of the funds.  In blockchain settings, all entities can track user funds and activity.  Neither consumers nor corporations will want their entire trading, purchasing, or subscription histories publicly available.
+
+Privacy is a growing field in the blockchain space \cite{tornadocash, 7503, 6956581, ultraanon}, but is plagued by malicious actors using privacy to launder funds.  In an effort to reduce money laundering, regulatory bodies are pursuing legal action against developers of privacy protocols~\cite{kuhn_samourai_2024,doj_tornado_cash_2023,bitcoin_fog_2021}.  This introduces the need to explicitly meet regulatory compliance inside private on-chain applications.
+
+Current approaches to blockchain compliance face an inherent contradiction: privacy requires that only the individual knows certain information, while compliance traditionally requires revealing information to prove compliance criteria.  This tension has led to two unsatisfactory outcomes:
+\begin{enumerate}
+    \item Privacy systems without compliance attract illicit actors and face legal challenges.
+    \item Compliance systems without privacy expose all transaction histories publicly, making them unacceptable for consumer and commercial adoption.
+\end{enumerate}
+
+The goal is to maximize privacy while maintaining the ability to prove compliance.  Current research attempting to bridge privacy and compliance have proposed solutions with strict domain limitations such as a new blockchain architecture, specific on-chain protocols, or privacy violations.  We investigate a framework that allows for compliance in any blockchain smart contract environment and in any privacy protocol without compromising privacy provided by the protocol.
+
+\subsection{Industry Interest}
+The two privacy protocols currently operational that have some measure of compliance are Privacy Pools and Railgun.  Both have received a great deal of interest from users; Railgun was launched in 2022 and reached \$131 Million (USD) deposited~\cite{defillama2025railgun} as of November 2025. Privacy Pools launched in March of 2025 and reached \$3.3 Million (USD) deposited~\cite{defillama2025privacypools} as of November 2025.  \reminder{HFK: update these figures in the final thesis.  I put dates in there now to protect against ``currently'' surviving into the final version.} The users currently in the blockchain space desire both compliance and privacy.  See section~\ref{sec:related-work} for a comparison of both to our framework.
+
+Large traditional financial corporations are still yet to integrate significantly with blockchains.  In a 2025 survey, 300 major financial firms were asked what factors keep them from becoming more involved in blockchain technology. In this multiple choice question, 52\% cited lack of regulatory certainty and 50\% cited lack of privacy as factors~\cite{paradigm2025tradfi}.  We see it is not just users, but also institutions who desire compliance and privacy.  In fact, this problem is a leading blocker for these institutions.  Solving this would result in a significant amount of capital being allocated on-chain.
+
+In 2024, \$2.2 billion (USD) was stolen in crypto hacks and exploits~\cite{trmlabs2025cryptocrime}.  Tracing stolen funds from all hacks is too large a task, so auditors prioritize only the largest exploits.  Our framework provides strong \textbf{proactive} compliance guarantees.  Non-compliant actors are stopped from interaction with compliant applications.  Compare this to retroactive compliance measures where non-compliant actors are able to interact with private protocols who keep a history of all private transactions.  Not only does this create more work for auditors trying to trace non-compliant individuals, it also introduces the risk of leaking compliant user's private information.
+
+\reminder{HFK: Here we can go beyond financial stuff. Supply chain is a good example here. It can help a B2B supply chain run on a public L1 underpinning.  Also within a permissioned system, it can reduce the degree of central control by the permissioning agent.  The concept could fit in the Oracle framework -- or at least Mark Rakhmilevich saw some merit to it. }
+
+\section{Privacy Preserving Compliance}
+\label{sec:privacy-preserving-compliance}
+It is necessary to introduce a stricter definition of \textit{privacy-preserving compliance}.  A compliance system is privacy preserving if it has \textit{verifiable compliance}, \textit{no deanonymization},  and inherits the \textit{maximum theoretical anonymity} of its adjacent privacy system.  Our framework maintains these properties and therefore meets the criteria of a privacy-preserving compliance system.  The definition of privacy-preserving compliance aims to provide a path for compliance without compromising the benefits of having a privacy system on-chain.
+
+\paragraph{No deanonymization:}  \textit{deanonymization} refers to revealing private information about an address, like balances or transaction history.  No entity should have the ability to deanonymize user data in an on-chain privacy system\footnote{Caveat: A user can always choose to reveal their own private transaction history.  There is no way to prevent this and it is acceptable because the user is initiating their own deanonymization.  ``No deanonymization" refers to third-party deanonymization.}.  
+
+Any protocol that is able to view keys of private user data has deanonymization.  The ability for a third party to reveal a user's private details is fundamentally weaker privacy, and unnecessary.  We can guarantee that only users can reveal their private transactions, and do so without compromising compliance.  In fact, we provide stronger compliance guarantees too.  Viewing keys are used for retroactive compliance checks, and our framework has proactive compliance: non-compliant actors are stopped before making their transaction rather than after. 
+
+The existence of the ability to deanonymize users is a risk vector to users and compromises trustlessness, as highlighted in~\cite{a16z_zkp_privacy_2022}.  Individuals with access to private information can and will abuse it.  Examples include the case of Twitter employees selling user personal data to Saudi Arabia \cite{newman2019twitter, collier2022twitter}, or US telecom providers illegally selling user data \cite{daws2024fcc}.  Additionally, any centralized collection of user data can be hacked.  In 2024, data that US telecommunication companies were legally required to collect was hacked \cite{sakellariadis2024china}.  In 2025, personal data held by the Ukrainian government was hacked by Russia \cite{post2025ukraine}.  In 2022, 23 terabytes of personal information on 1 billion Chinese residents was leaked from a police database and sold \cite{wikipedia2025shanghai}.
+
+An on-chain privacy system with deanonymization does not benefit from the properties of being on-chain in the first place.  A privacy system where a 3rd party also knows secret user data is as ``private" as a traditional exchange or bank.  In order for a on-chain privacy system to provide unique value to users, it must not allow for deanonymization.
+
+\paragraph{Verifiable compliance:} Compliance criteria should be publicly viewable and a user's compliance status should be verifiable.  For example, a user's compliance status should not be determined behind a third-party API as this runs the risk of the third-party not properly enforcing the compliance definition, introducing risk to all parties involved.  This trust assumption could potentially be mitigated with techniques such as \textit{trusted execution environments} (TEEs) that verify that a third-party correctly executed some computation \cite{haventee}.  The approach in this framework is to publish compliance definitions publicly and have users generate their own ZK proofs that can be cryptographically verified.
+
+\paragraph{Maximum theoretical anonymity of compliant privacy:}  There exists a theoretical maximum anonymity set for any privacy system that aims to be compliant.  Assume a privacy system has anonymity set $P$ and a compliance definition has $N$ addresses that meet the criteria.  If this compliance definition is enforced for entry and existence in the privacy system's anonymity set, then any address that participates has a maximum anonymity set of $min(|P|, N)$.  This is because the user is most identifiable in the smallest set it is a member of.  Our framework provides this maximum theoretical anonymity.
+
+\section{Related Work and Attempted Solutions}
+\label{sec:related-work}
+Here, we review other work that attempts to solve the compliant privacy problem.  We omit full descriptions of each solution and focus on how our solution is distinguished from prior work by a feature comparison.
+
+\reminder{Still need to compare this thesis to each item listed below}
+
+\paragraph{Blockchain specific:}
+Solutions that are blockchain specific propose a new blockchain architecture or would require protocol level changes to existing architectures.  Trivially, a solution that requires blockchain architecture changes is incompatible with existing blockchains and cannot benefit from the network effect of robust ecosystems on currently deployed blockchains.  New blockchain architectures are always worth exploring, but we maintain that the best solution to the compliant privacy problem isn't limited by blockchain architecture and can be applied to any chain, bringing compliance to any application regardless of which chain they chose.  Compliance should be an option available to all current and future applications across all chains.
+
+Solutions that propose a new blockchain architecture include:
+\begin{itemize}
+    \item ``A privacy-preserving scheme with multi-level regulation compliance for blockchain"~\cite{privacyregulation}
+    \item Aleo~\cite{aleo2025homepage}, based on ``ZEXE: Enabling Decentralized Private Computation"~\cite{ZEXE}
+    \item ``Payy: L2 Ethereum ZK Rollup for Private and Compliant Transactions"~\cite{payywhitepaper}
+    \item ``Arc: An open Layer-1 blockchain purpose-built for stablecoin finance"~\cite{circlearc}
+    \item ``Tempo: The blockchain designed for payments website"~\cite{tempo2025}
+\end{itemize}
+
+\paragraph{Deanonymization:}
+For points raised in \ref{sec:privacy-preserving-compliance}, no entity other than the user themselves should have the ability to reveal private user information.  \reminder {maybe "no entity should be able to reveal private information about any individual user except that particular user.''  I still worry that ``them'' here might imply that both the sender and receiver can reveal information.  English sucks in that regard.}
+The the ability to deanonymize users is a risk to users, imposes more work for auditors, and is fundamentally weaker privacy (if indeed there is any privacy at all).
+\reminder{HFK: I think this is the first time audit shows up.  Might be worth noting much earlier that published compliance proofs facilitates low-cost, efficident audits.}
+
+Solutions that have a mechanism for deanonymization include:
+\begin{itemize}
+    \item ``A privacy-preserving scheme with multi-level regulation compliance for blockchain"~\cite{privacyregulation}
+    \item ``REGKYC: Supporting Privacy and Compliance Enforcement for KYC in Blockchains"~\cite{Xiong2025REGKYCSP}
+    \item ``zkFi: Privacy-Preserving and Regulation Compliant Transactions using Zero Knowledge Proofs"~\cite{chaudhary2025zkfiprivacypreservingregulationcompliant}
+    \item Daze~\cite{hazedaze}
+    \item ``ZEBRA: Anonymous Credentials with Practical On-chain Verification and Applications to KYC in DeFi"~\cite{Rathee2022ZEBRAAC}
+    \item ``SeDe: Balancing Blockchain Privacy and Regulatory Compliance by Selective De-Anonymization"~\cite{chaudhary2025sedebalancingblockchainprivacy}
+    \item ``A Regulation Scheme Based on the Ciphertext-Policy Hierarchical Attribute-Based Encryption in Bitcoin System"~\cite{8314106}
+    \item ``Payy: L2 Ethereum ZK Rollup for Private and Compliant Transactions"~\cite{payywhitepaper}
+    \item ``Arc: An open Layer-1 blockchain purpose-built for stablecoin finance"~\cite{circlearc}
+\end{itemize}
+
+We commend Railgun~\cite{railgun}, Privacy Pools~\cite{privacypools,buterin2023blockchain}, and Haze~\cite{hazedaze} for meeting the definition of Privacy Preserving Compliance without being tied to any specific blockchain architecture.  
+
+Our solution differs from Privacy Pools and Haze by being an open framework adoptable by any application and supporting a wide breadth of compliance measures.  Privacy Pools and Haze's compliance is limited to only sanction list checks for a single transaction mixer. 
+
+Railgun is similar to our solution as it is also a framework.  Users opt in to join the Railgun anonymity set with a compliance proof\footnote{Railgun refers to their compliance proofs as ``Proofs of Innocence"} and can briefly reveal parts of their balance to interact with public on-chain applications.  On-chain applications do not directly integrate with Railgun and do not benefit from the compliance or privacy guarantees that Railgun users have.  Railgun's compliance checks are limited to sanction list checks and some aspects of specific transactions.  This is notably more flexible than other compliant privacy solutions.
+
+Railgun's compliance measure ensures that all Railgun users are compliant.  The key difference is that our framework allows any application to have the guarantee that all their users are compliant.  Additionally, our framework isn't limited to a specific privacy mechanism or application. 
+
+\reminder{Joss: Will need someone to play devils advocate for this Railgun breakdown.  This conversation would inspire a better comparison.}
+
+\reminder{Joss: comparison TODO: Panther protocol, Iron Fish}
+
+
+\section{Proposed Solution}
+
+We propose an open framework where regulatory bodies publish compliance definitions, applications require users to prove they meet those requirements, and users generate cryptographic proofs demonstrating compliance, all without revealing private information.  Users who don’t meet the compliance requirements are unable to interact with compliant applications.  
+
+Proving compliance to an application has been mentioned in brief in~\cite{} and is live in Railgun and Privacy Pools.  Our contribution is a standard framework to allow this compliance technique to be used at-scale across many applications and provides a standard interface for regulators to define compliance.
+
+\subsection{Framework Approach}
+
+The distinguishing feature of our solution relative to other work in this space is that it defines an open framework for use by players in a competitive ecosystem.  It is not a new blockchain.  It is not a payment system.  It is not a new application.  Rather, we are creating a framework for established and new-entrant financial providers to take advantage of the power of the emerging blockchain ecosystem by leveraging the features of our framework.
+
+Our framework is unique in its provision of a standard means for regulators to publish requirements openly in a way that enables proof of compliance.  Regulation based on constraints and proofs is valuable not only to financial providers, but also to regulators and users.  Regulators can check compliance by verification of proofs, which is much more efficient than having to evaluate full execution histories.  Users can show transparently that they are in compliance without having to reveal private data.
+
+Our framework is \textit{chain agnostic}: it can be implemented on any chain with smart contracts and capability to verify ZK proofs.  Because on-chain compliance pertains to transactions and transaction histories and not to specific proprietary features of a particular blockchain, our framework enables interoperability across platforms that use our framework.  This facilitates a competitive ecosystem in which each member of the ecosystem shares a common foundation of privacy and compliance guarantees.
+
+\reminder{HFK: maybe a comment here about identity -- regulators have well-known
+public keys and use private keys to sign regulations.  OR, reputable institutions
+may translate regulations into constraints and sign those constraints.}
+
+\subsection{Compliance Definition}
+
+Compliance definitions are sets of logical rules over blockchain data (e.g., ``address not on sanction list," ``funds from KYC'd exchange," ``no transaction structuring patterns").  Compliance definitions can also contain public parameters, for example a list of sanctioned addresses.
+
+The logical building blocks of the compliance definition over on-chain data are referred to as constraints, and discussed more in Section~\ref{sec:constraints}.  We envision compliance definitions being able to be compiled into constraints, and constraints being able to compile into circuits.  This allows compliance to be proven by proving the constraints that make up a definition.
+
+Each published compliance definition can be used by any number of applications, and applications can require multiple compliance definitions.
+
+Compliance definitions are updatable by their author to account for changing regulations.  For that reason, each compliance definition should have an associated timestamp.
+
+\subsection{Actors}
+Actors in our framework consist of regulators, applications, and users.
+
+\subsubsection{Actor Interaction}
+\begin{enumerate}
+    \item Regulators create and publish compliance definitions.
+    \item Applications select relevant compliance definitions based on their regulatory obligations.
+    \item Users generate zero-knowledge proofs of compliance definitions, demonstrating they meet requirements without revealing transaction histories, balances, or counterparties.
+    \item Applications verify proofs on-chain before allowing transactions, preventing non-compliant activity cryptographically rather than detecting it afterward.
+\end{enumerate}
+
+\subsubsection{Regulators}
+Regulators create definitions of compliance over on-chain data and publish this definition publicly with a signature.  The manner in which it is published is an implementation detail, but the compliance definitions need to be publicly accessible.  The compliance definition is a set of logical constraints with annotations.  Constraints are discussed more in section~\ref{sec:constraints}.
+\reminder{Joss: we should discuss who deploys the verifier contracts and how this interacts with constraints.  It is important for applications that the verifier contract doesn't change}
+\reminder{HFK: compliance is not just over on-chain data.  If the constraint
+says something about the transaction I am about to submit, then there is a 
+non-chain component since my transaction is not yet on-chain.}
+
+We refer to any entity that publishes a compliance definition as a ``regulator".  Ideally, the entity is  associated with the government regulatory agency, but in practice, particularly initially, the publisher is most likely to be a blockchain analytics company.  These companies already assume compliance responsibilities, such as maintaining sanction lists and monitoring for suspicious chain activity.
+
+As this is an open framework, there is no restriction on who can publish compliance definitions.  Applications need to be careful to select definitions published by reputable sources.
+Regulators are also responsible for updating compliance definitions, like adding more constraints or updating parameters, with each update having a new
+timestamp.
+
+\subsubsection{Applications}
+
+On-chain applications determine which compliance definition(s) suit their regulatory obligations.
+
+Applications integrate with this framework by making a smart contract change to require users to provide a proof of the required compliance at entry-point functions.  If the proof does not verify, then the function reverts.  After this change, it is guaranteed that all future users of the application are compliant.
+
+For example, the entrypoint function for some application is \texttt{deposit(someVars)}.  Integration would consist of changing it to:
+\begin{codebox}
+\Procname{$\proc{deposit}(\id{someVars}, \id{proof})$}
+\li \>\kw{require} $\id{verifierContract}.\proc{Verify}(\id{proof})$
+\li \>
+\li \>\Comment Rest of the application logic
+\end{codebox}
+
+\reminder{Joss: point about verifier contract address not changing}
+
+\subsubsection{Users}
+
+Users generate ZK proofs of compliance definitions and supply the proofs as an argument when interacting with a compliance requiring application.  The constraint system was constructed to intelligently minimize the amount of proof computation needed for users interacting with many compliance requiring applications.
+
+\reminder{HFK: Users have to be able to state what sort of compliance they claim
+to prove.  Thus, constraints need to have unique publicly-available IDs.  
+the result is that we have a set of identified constraints, each signed by
+an identified regulator.  This database needs to be maintained in a trustless
+manner and be accessible.  Control of this database is another censorship risk.}
+
+\reminder{HFK: we need a discussion here -- may a new subsubsection -- on user identity.  Our framework permits users to be fully anonymous while proving compilance, but the particular application may not be set up for total anonymity.  If the application keeps records based on users, there will be some sort of identity in the application, either the user's real identity or a pseudonym.  There is, of course, some loss of privacy here.  Such a loss may be unacceptable in some settings, but in other cases, it may be part of the required business practices. 
+
+Consider a stablecoin provider. Transactions could be totally public.  A better, though not perfect solution is to have deposits and payments of fungible stablecoins with balances held internally in the stablecoin provider's database/contract.  The provider could keep only balances, not transaction
+histories.  This would enable some privacy loss and some forms of censorship, depending on how anonymous the user is.  Alternatively, the user could hold the balance and prove as needed that the balance is large enough.    While the latter may be better from a privacy standpoint, the former is closer to many current system structures and might be a reasonable first step as stablecoins compete on privacy.
+
+I'm running off at the mouth here.  Edit as you see fit!!!
+
+Another point: compliance constraints are separate from the user and the application.  Proofs can relate not only to compliance constraints but to application-specific features.
+
+}
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.5cm and 2cm,
+    user/.style={rectangle, draw=gray!70, fill=gray!20, thick, minimum width=1.5cm, minimum height=1.2cm, rounded corners=5pt, align=center, font=\normalsize},
+    compliance/.style={rectangle, draw=red!70, fill=red!10, very thick, minimum width=3cm, minimum height=1.5cm, rounded corners=10pt, align=center, font=\normalsize},
+    dapp/.style={rectangle, draw=cyan!70, fill=cyan!10, very thick, minimum width=3cm, minimum height=1.5cm, rounded corners=10pt, align=center, font=\normalsize},
+    arrow/.style={->, >=stealth, thick, black},
+    dashedarrow/.style={->, >=stealth, thick, dashed, cyan!70},
+    regarrow/.style={->, >=stealth, thick, green!60!black},
+    label/.style={font=\scriptsize, text=black}
+]
+
+% User node (left)
+\node[font=\normalsize] (user) {User};
+
+% Compliance boxes
+\node[compliance, right=3cm of user, yshift=1cm] (uscomp) {Compliance\\definition A};
+\node[compliance, right=3.5cm of uscomp] (eucomp) {Compliance\\definition B};
+
+% Regulator arrow origins (invisible nodes above compliance boxes)
+\coordinate[above=1.5cm of uscomp] (reg1);
+\coordinate[above=1.5cm of eucomp] (reg2);
+
+% Regulator labels at the top
+\node[above=0.1cm of reg1, font=\normalsize, text=green!60!black] {Regulator};
+\node[above=0.1cm of reg2, font=\normalsize, text=green!60!black] {Regulator};
+
+% Dapp boxes (bottom)
+\node[dapp, below=2.5cm of uscomp, xshift=-0.5cm] (dapp1) {Dapp 1};
+\node[dapp, below=2.5cm of eucomp, xshift=0.5cm] (dapp2) {Dapp 2};
+
+% Arrows from regulators to compliance boxes
+\draw[regarrow] (reg1) -- (uscomp) node[midway, right, label, text=green!60!black] {publishes};
+\draw[regarrow] (reg2) -- (eucomp) node[midway, right, label, text=green!60!black] {publishes};
+
+% Arrow from user to US compliance
+\draw[arrow] (user) -- (uscomp) node[midway, above=0.1cm, label, align=center] {generates\\proof of};
+
+% Arrow from user to dapps area
+\draw[arrow] (user) -- (dapp1.north west) node[midway, left=0.1cm, label] {proof validates};
+
+% Dashed arrows from compliance to dapps
+\draw[dashedarrow] (dapp1) -- (uscomp) node[midway, left, label, text=cyan!70] {requires};
+\draw[dashedarrow] (dapp2) -- (uscomp) node[midway, left=0.15cm, label, text=cyan!70] {requires};
+\draw[dashedarrow] (dapp2) -- (eucomp) node[midway, right, label, text=cyan!70] {requires};
+
+\end{tikzpicture}
+\caption{Composable compliance framework. Applications can opt into requiring multiple compliance definitions.  Users can generate proofs of any compliance definition.  In this example, a user is interacting with Dapp 1 so they must first generate a proof of compliance definition A.}
+\label{fig:compliance-framework-overview}
+\end{figure}
+
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=2cm and 2.5cm,
+    user/.style={circle, draw=white, fill=black!80, thick, minimum size=1.3cm, align=center, font=\normalsize, text=white},
+    compliance/.style={rectangle, draw=red!70, fill=red!10, very thick, minimum width=3cm, minimum height=1.5cm, rounded corners=10pt, align=center, font=\normalsize},
+    dapp/.style={rectangle, draw=cyan!70, fill=cyan!10, very thick, minimum width=3cm, minimum height=1.5cm, rounded corners=10pt, align=center, font=\normalsize},
+    arrow/.style={->, >=stealth, thick, black},
+    dashedarrow/.style={->, >=stealth, thick, dashed, cyan!70},
+    label/.style={font=\scriptsize, text=black}
+]
+
+% User node (top center)
+\node[font=\normalsize] (user) {User};
+
+% Compliance boxes (left and right of user, slightly below)
+\node[compliance, below left=1.5cm and 3cm of user] (uscomp) {Compliance\\definition A};
+\node[compliance, below right=1.5cm and 3cm of user] (eucomp) {Compliance\\definition B};
+
+% Dapp box (bottom center)
+\node[dapp, below=4cm of user] (dapp) {Dapp};
+
+% Arrows from compliance boxes to user
+\draw[arrow] (user) -- (uscomp) node[midway, above, label, sloped, align=center] {generates\\proof of};
+\draw[arrow] (user) -- (eucomp) node[midway, above, label, sloped, align=center] {generates\\proof of};
+
+% Arrow from user to dapp
+\draw[arrow] (user) -- (dapp) node[midway, right, label, align=center] {both\\proofs validate};
+
+% Dashed arrows from compliance boxes to dapp
+\draw[dashedarrow] (dapp) -- (uscomp) node[midway, left=0.15cm, label, text=cyan!70] {requires};
+\draw[dashedarrow] (dapp) -- (eucomp) node[midway, right=0.15cm, label, text=cyan!70] {requires};
+
+\end{tikzpicture}
+\caption{Example compliance scenario. A Dapp requires both A and B compliance. The user generates proofs for both compliance definitions and submits them together. The Dapp verifies both proofs on-chain before allowing the user to interact.}
+\label{fig:multi-compliance-example}
+\end{figure}
+
+\subsection{Composability} 
+The same definition of compliance can be used by any number of protocols, a user can generate proofs for any published definitions of compliance, and proofs for multiple compliance definitions can be required by a protocol.  Figure~\ref{fig:compliance-framework-overview} shows dapps opting into any number of compliance definitions.  Figure ~\ref{fig:multi-compliance-example} shows a user proving compliance for a dapp that requires multiple compliance definitions.
+
+Compliance definitions can be fine-grained instead of wide-umbrella definitions.  For example, instead of having a single definition that encompasses all US rules and regulations, there can be a definition for US consumer compliance and a definition for US corporate compliance.
+
+\subsection{Constant-cost compliance:} 
+The cost to verify compliance proof on-chain does not grow with the size of the compliance definition.  This is inherited from using zkSNARKs as compliance proofs.  The circuit can be very computationally intensive and have pages of criteria, but it will still cost the same amount as a circuit with a single operation. 
+
+\subsection{Constraints}
+\label{sec:constraints}
+Although regulations vary globally and over time, they often rely on similar logical primitives: checking membership in lists, comparing values against thresholds, or verifying historical patterns. We built our framework to leverage this similarity by decomposing compliance definitions into reusable logic that we refer to as \textit{constraints}.  This compositional structure allows for complex requirements to be expressed as combinations of constraints.
+
+A \textit{constraint} is a boolean predicate that evaluates blockchain state using first-order logic. A constraint $C$ is expressed in the general form:
+
+$$C = (Q \, x \in D(s) : P(x, p), \text{ at chain state } i)$$
+
+where:
+\begin{itemize}
+    \item \textbf{Quantifier} ($Q \in \{\forall, \exists, \mathbb{1}\}$): the logical quantifier. $\mathbb{1}$ denotes the trivial quantifier for singleton domains (used in atomic constraints)
+    
+    \item \textbf{Domain} ($D: \mathcal{S} \rightarrow 2^\mathcal{S}$): a function that maps a subject to a collection of blockchain entities over which the quantifier ranges. Common domains include:
+    \begin{itemize}
+        \item Singleton: $D(s) = \{s\}$ --- evaluates a single subject (atomic case)
+        \item Transaction history: $D(\text{addr}) = \text{history}(\text{addr})$ 
+        \item Set of recipients: $D(\text{addr}) = \text{recipients}(\text{addr})$
+        \item Block ranges: $D(B) = \{[B_i, B_j] \subseteq [B_0, B_{\text{current}}] : \text{condition}\}$
+        \item Filtered collections: $D(s) = \{x \in D'(s) : \text{filter}(x)\}$
+    \end{itemize}
+    
+    \item \textbf{Subject} ($s \in \mathcal{S}$): the root blockchain entity from which the domain is derived. Example subjects include:
+    \begin{itemize}
+        \item Sender of a transaction: $\text{sender}(\text{txn})$
+        \item Recipient of a transaction: $\text{recipient}(\text{txn})$
+        \item Account balance: $\text{balance}(\text{addr})$
+        \item Result of a contract call: $\text{result}(\text{contract fn})$
+        \item Transaction payload: $\text{payload}(\text{txn})$
+    \end{itemize}
+    
+    \item \textbf{Predicate} ($P: \mathcal{S} \times \mathcal{P} \rightarrow \{\text{true}, \text{false}\}$): a boolean function applied to each element of the domain. Predicates include:
+    \begin{itemize}
+        \item Comparison operations: $P(x, p) = (x \,\phi\, p)$ where $\phi \in \{=, \neq, <, \leq, >, \geq, \in, \notin, \ldots\}$
+        \item Nested constraints: $P(x, p) = C'(x, p', i')$
+        \item Aggregate comparisons: $P(X, p) = (\text{agg}(X) \,\phi\, p)$ where $\text{agg} \in \{\sum, \text{count}, \text{max}, \text{min}, \ldots\}$
+    \end{itemize}
+    
+    \item \textbf{Parameter} ($p \in \mathcal{P}$): the value or set against which elements are evaluated, containing:
+    \begin{itemize}
+        \item Public parameters $p_{\text{pub}}$ provided by the compliance author (e.g., sanction lists, required values)
+        \item Private inputs $p_{\text{priv}}$ provided by the user (e.g., mixer secret, identifying information)
+    \end{itemize}
+
+    \item \textbf{Chain State} ($i \in \mathcal{I}$): the point in time or time range over which evaluation occurs. Examples include:
+    \begin{itemize}
+        \item Current block: $B_{\text{current}}$
+        \item Historical block: $B_h$ for $h < \text{current}$
+        \item Block range: $[B_i, B_j]$
+        \item Unix timestamp
+    \end{itemize}
+\end{itemize}
+
+The constraint function has the signature:
+
+$$C: \mathcal{Q} \times (\mathcal{S} \rightarrow 2^\mathcal{S}) \times (\mathcal{S} \times \mathcal{P} \rightarrow \{\text{true}, \text{false}\}) \times \mathcal{I} \rightarrow \{\text{true}, \text{false}\}$$
+
+where $\mathcal{Q} = \{\forall, \exists, \mathbb{1}\}$, and the constraint evaluates as:
+
+$$C(Q, D, P, i) = \begin{cases}
+P(s, p) & \text{if } Q = \mathbb{1} \text{ and } D(s) = \{s\} \text{ (atomic)} \\
+\forall x \in D(s) : P(x, p) & \text{if } Q = \forall \text{ (universal)} \\
+\exists x \in D(s) : P(x, p) & \text{if } Q = \exists \text{ (existential)}
+\end{cases}$$
+
+Constraints can be composed using boolean operators to form complex compliance requirements:
+
+$$R = C_1 \land C_2 \lor C_3 \land \ldots$$
+
+\subsubsection{Atomic Constraints as Special Cases}
+Atomic constraints are constraints where the domain is a singleton set $D(s) = \{s\}$ and the quantifier is $\mathbb{1}$. In this case, the constraint reduces to directly evaluating the predicate:
+
+$$C_{\text{atomic}} = (\mathbb{1} \, s \in \{s\} : s \,\phi\, p, i) \equiv (s \,\phi\, p, i)$$
+
+For clarity and brevity, atomic constraints are typically written in their simplified form:
+
+$$C_{\text{atomic}} = (s \,\phi\, p, i)$$
+
+\subsubsection{Example constraint}
+Sanction list checks are a popular compliance measure in the blockchain space~\cite{solomka2025zeroknowledge, tornadocashprimer}.  The constraint ``Sender of this transaction is not on sanction list $A$" can be decomposed as follows:
+
+\begin{itemize}
+    \item \textbf{Subject}: $\text{sender}(\text{txn})$ --- the address that initiated the transaction
+    \item \textbf{Operation}: $\notin$ --- does not exist in
+    \item \textbf{Parameter}: $A$ --- the sanction list (a public parameter provided by the regulator)
+    \item \textbf{Chain state}: $B_{\text{current}}$ --- evaluated at the current block
+\end{itemize}
+
+The constraint evaluates to \textbf{true} if and only if the subject (sender of the transaction) does not exist in the parameter (sanction list).  Formally expressed as:
+
+$$C_{\text{sanction}} = (\text{sender}(\text{txn}) \notin A, B_{\text{current}})$$
+
+\subsubsection{Example: shared constraints}
+When multiple compliance definitions require the same constraint, that constraint can be proved once and applied to multiple definitions.  For example, an application wishes to be compliant with two regulatory bodies.  These regulatory bodies have published compliance definitions $R_1$ and $R_2$, respectively.  The application requires users to supply a valid proof of $R_1$ and $R_2$.  $R_1$ and $R_2$ are composed of simple constraints:
+
+$$R_1 = C_1 \land C_2$$
+$$R_2 = C_1$$
+
+A user of the application only needs to compute a proof for $R_1$ because it's constraints are a super-set of the constraints used in $R_2$: proving $R_1$ also proves $R_2$.
+
+\paragraph{Another Example}
+An application requires $R_1$ and $R_2$:
+$$R_1 = C_1 \land C_2$$
+$$R_2 = C_2 \land C_3$$
+
+Constructing a proof that validates for both regulations only requires generating a proof for three constraints, as $C_2$ is included in both definitions.  $C_2$ is computed once and applied to both $R_1$ and $R_2$.
+
+\subsubsection{Compliance definition} 
+A compliance definition is a combination of constraints with boolean operators and a time parameter during which the definition is valid.  The time parameter is necessary to account for regulations changing over time and to allow for regulations to be published before they go into effect.  Given constraints $C_1, \ldots, C_k$, a compliance definition $R$ is defined as:
+$$R = (C_1 \land C_2 \land \cdots \land C_k, [t_{\text{start}}, t_{\text{end}}])$$
+where $t_{\text{start}}$ and $t_{\text{end}}$ denote the block heights or timestamps defining the validity period of the compliance definition. The definition $R$ is considered active if and only if the evaluation occurs within this temporal window:
+$$\text{active}(R, t) = \begin{cases}
+\text{true} & \text{if } t_{\text{start}} \leq t \leq t_{\text{end}} \\
+\text{false} & \text{otherwise}
+\end{cases}$$
+
+Alternatively, open-ended validity can be expressed with $t_{\text{end}} = \infty$ for rules with no expiration.  For brevity, the time parameter is omitted for compliance definitions and can be assumed to be valid for the current time.
+
+\subsubsection{Off-chain data in constraints}
+Constraints can require off-chain data that is provided by the user during proof generation time.  This user input, $p_{\text{priv}}$, is completely private and not revealed to any other entity.  This allows for constructing constraints that rely on off-chain data.
+
+\subsubsection{Verifier contract}
+\reminder{Joss: This is section that will become clear when I start implementation}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    constraint/.style={rectangle, draw=blue!60, fill=blue!5, thick, minimum width=3cm, minimum height=1cm, rounded corners},
+    proof/.style={rectangle, draw=green!60, fill=green!5, thick, minimum width=2.5cm, minimum height=0.8cm, rounded corners},
+    aggregate/.style={rectangle, draw=purple!60, fill=purple!5, thick, minimum width=4cm, minimum height=1.2cm, rounded corners},
+    onchain/.style={rectangle, draw=orange!60, fill=orange!5, thick, minimum width=4cm, minimum height=1cm, rounded corners},
+    arrow/.style={->, >=stealth, thick},
+    label/.style={font=\small}
+]
+
+% Layer 1: Individual Constraints
+\node[constraint, align=center] (c1) {$C_1$};
+\node[constraint, align=center, right=of c1] (c2) {$C_2$};
+\node[constraint, align=center, right=of c2] (c3) {$C_3$};
+
+% Layer 2: Individual Proofs
+\node[proof, below=of c1] (p1) {Proof $\pi_{C_1}$};
+\node[proof, below=of c2] (p2) {Proof $\pi_{C_2}$};
+\node[proof, below=of c3] (p3) {Proof $\pi_{C_3}$};
+
+% Arrows from constraints to proofs
+\draw[arrow] (c1) -- node[right, label] {prove} (p1);
+\draw[arrow] (c2) -- node[right, label] {prove} (p2);
+\draw[arrow] (c3) -- node[right, label] {prove} (p3);
+
+% Layer 3: Aggregation (increased spacing)
+\node[aggregate, align=center, below=3.5cm of c2] (agg) {Aggregated Proof\\$\pi_R = \text{Aggregate}(\pi_{C_1}, \pi_{C_2}, \pi_{C_3})$};
+
+% Arrows from proofs to aggregation
+\draw[arrow] (p1) -- (agg.north west);
+\draw[arrow] (p2) -- (agg.north);
+\draw[arrow] (p3) -- (agg.north east);
+
+% Layer 4: On-chain Verification
+\node[onchain, align=center, below=of agg] (verify) {On-Chain Verification\\{\scriptsize \texttt{verifierContract.verify}($\pi_R$)}};
+
+% Arrow from aggregation to on-chain
+\draw[arrow, very thick] (agg) -- node[right, label] {submit} (verify);
+
+% Compliance Definition Label
+\node[above=0.3cm of c2, font=\large\bfseries] (title) {Compliance Definition: $R = C_1 \land C_2 \land C_3$};
+
+% Layer Labels
+\node[left=1.5cm of c1, font=\small\itshape, align=right] (layer1) {Constraints};
+\node[left=1.5cm of p1, font=\small\itshape, align=right] (layer2) {Constraint Proofs};
+\node[left=1.5cm of agg, font=\small\itshape, align=center] (layer3) {Aggregated Proof\\(Compliance Definition Proof)};
+\node[left=1.5cm of verify, font=\small\itshape, align=right] (layer4) {Verification};
+
+% Background boxes for visual grouping
+\begin{scope}[on background layer]
+    \node[draw=blue!30, fill=blue!3, thick, rounded corners, fit=(c1)(c2)(c3), inner sep=0.3cm] {};
+    \node[draw=green!30, fill=green!3, thick, rounded corners, fit=(p1)(p2)(p3), inner sep=0.3cm] {};
+    \node[draw=purple!30, fill=purple!3, thick, rounded corners, fit=(agg), inner sep=0.4cm] {};
+\end{scope}
+
+\end{tikzpicture}
+\caption{Proof aggregation workflow for compliance definition $R$. Individual constraints are proved separately, generating proofs $\pi_{C_1}$, $\pi_{C_2}$, and $\pi_{C_3}$. These proofs are then aggregated into a single proof $\pi_R$ that is submitted on-chain for verification.}
+\label{fig:proof-aggregation-layered}
+\end{figure}
+
+\subsection{Generating Compliance Proofs}
+
+Proofs of compliance definition are aggregate proofs of multiple constraint proofs.  When proving a compliance definition, each constraint is proved individually, then all constraint proofs are combined in an aggregation proof which is then submitted on-chain.  See Figure~\ref{fig:proof-aggregation-layered} for the complete workflow.
+
+Proofs are generated locally by the user and then submitted on-chain as transaction arguments.  The proof is public on-chain\footnote{Some blockchains allow for private transactions.  Proofs submitted as part of a private transaction will not be public.}, but it cannot be used to recover the user's private inputs.
+
+The user can locally save all constraints that they have proven, discussed further in section \ref{sec:proof-manager}.  This allows users to re-use previous proved constraints.  It is often the case that some parts of a compliance definition may already be proved or that the constraints of separate regulatory domains have some subexpressions in common.  In these cases, inference over the constraints can lead to significant reduction in the complexity of the constraints to be proved.
+
+\paragraph{Example} 
+Alice previously proves compliance definition $R_1$, which requires proving constraints $C_1$ and $C_2$.  Alice has locally saved her proofs of $C_1$ and $C_2$.
+
+$$R_1 = C_1 \land C_2$$
+
+Now, Alice wishes to prove $R_2$.  
+ 
+$$R_2 = C_2 \land C_3$$
+
+She can inspect $R_2$ and sees that it uses $C_2$, a constraint that she has previously proved and saved.  She can skip the computation of $C_2$ because she already has a valid proof!  All she needs to compute is $C_3$, and $R_2$, which is the aggregate proof over $C_2$ and $C_3$.
+
+\subsection{Proof Manager}
+\label{sec:proof-manager}
+ We envision a client-side program that aids in proof generation. The proof manager takes as input a compliance definition, chain identifier, private user input, and the user address.  It outputs a proof of that compliance definition.
+
+The proof manager is responsible for
+\begin{itemize}
+    \item Doing inference over required constraints to identify the minimum amount of proving necessary, relying on previously proved constraints.
+    \item Constraint to circuit compilation.
+    \item Fetching on-chain data of the user's transaction history necessary for proof generation.
+    \item Fetching public proof inputs from the published verifier contract.
+    \item Generating constraint proofs.
+    \item Generating aggregate proof over the constrains to prove compliance.
+    \item Saving completed proofs.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=0.8cm and 1.5cm,
+    input/.style={rectangle, draw=blue!70, fill=blue!15, thick, minimum width=2.3cm, minimum height=0.65cm, rounded corners, align=center, font=\small},
+    process/.style={rectangle, draw=green!70, fill=green!20, thick, minimum width=2.3cm, minimum height=0.7cm, rounded corners, align=center, font=\small},
+    storage/.style={rectangle, draw=brown!70, fill=brown!20, thick, minimum width=2cm, minimum height=1cm, rounded corners, align=center, font=\small},
+    output/.style={rectangle, draw=orange!70, fill=orange!20, thick, minimum width=3.2cm, minimum height=0.85cm, rounded corners, align=center, font=\normalsize},
+    manager/.style={rectangle, draw=red!60, fill=red!8, very thick, rounded corners},
+    blockchain/.style={rectangle, draw=cyan!70, fill=cyan!8, very thick, rounded corners},
+    onchainbox/.style={rectangle, draw=cyan!60, fill=cyan!15, thick, minimum width=2.8cm, minimum height=0.9cm, rounded corners, align=center, font=\small},
+    arrow/.style={->, >=stealth, thick},
+    dashedarrow/.style={->, >=stealth, thick, dashed},
+    label/.style={font=\tiny, text=black}
+]
+
+% Input nodes (left side)
+\node[input] (in1) {Compliance\\definition $R$};
+\node[input, below=0.25cm of in1] (in2) {Chain identifier};
+\node[input, below=0.25cm of in2] (in3) {Verifier contract\\address};
+\node[input, below=0.25cm of in3] (in4) {User address};
+\node[input, below=0.25cm of in4] (in5) {Private input};
+
+% Proof Manager container
+\node[manager, right=1.5cm of in3, minimum width=7.3cm, minimum height=8cm] (manager) {};
+\node[above=0.05cm of manager.north, font=\bfseries\large, text=red!70] {Proof Manager};
+
+% Internal components - circuit moved 0.1cm to the right (xshift changed from 1.5cm to 1.6cm)
+\node[process, below=0.7cm of manager.north, xshift=-1.8cm] (constraint) {Constraint\\inference};
+\node[process, below=0.7cm of manager.north, xshift=1.7cm] (circuit) {Circuit\\compilation};
+\node[storage, below=1.9cm of constraint] (storage) {Proof\\storage};
+\node[process, below=1.2cm of circuit] (fetchdata) {Fetch on-chain\\data};
+\node[process, below=1.2cm of fetchdata] (generate) {Generate\\constraint\\proofs};
+\node[process, below=2.2cm of storage] (aggregate) {Aggregate\\proofs};
+
+% Blockchain container (right side)
+\node[blockchain, right=2.2cm of fetchdata, minimum width=3.5cm, minimum height=4.5cm] (blockchain) {};
+\node[above=0.05cm of blockchain.north, font=\bfseries\large, text=cyan!70] {Blockchain};
+
+\node[onchainbox, below=0.6cm of blockchain.north] (txhistory) {User transaction\\history};
+\node[onchainbox, below=1.6cm of txhistory] (verifier) {Verifier contract\\(public inputs)};
+
+% Output (centered below aggregate proofs)
+\node[output, below=1.5cm of aggregate] (output) {Aggregated proof $\pi_R$};
+
+% Input arrows to manager
+\draw[arrow] (in1.east) -- (manager.west |- in1.east);
+\draw[arrow] (in2.east) -- (manager.west |- in2.east);
+\draw[arrow] (in3.east) -- (manager.west |- in3.east);
+\draw[arrow] (in4.east) -- (manager.west |- in4.east);
+\draw[arrow] (in5.east) -- (manager.west |- in5.east);
+
+% Internal workflow arrows
+\draw[arrow] (constraint) -- (storage) node[midway, right, label, align=center] {skip generation if\\previously proved};
+\draw[arrow] (circuit) -- (fetchdata);
+\draw[arrow] (fetchdata) -- (generate);
+
+% Save proof arrow - STRAIGHT LINE from generate to storage
+\draw[arrow] (generate.west) -- (storage.south east) node[pos=0.8, right=0.05cm, label] {save proof};
+
+% Load proof from storage to aggregate
+\draw[arrow] (storage) -- (aggregate) node[midway, right, label, align=left] {load\\proofs};
+
+% Blockchain interaction arrows
+\draw[dashedarrow, cyan!70] (fetchdata.east) -- (txhistory.west);
+% STRAIGHT LINE to verifier contract
+\draw[dashedarrow, cyan!70] (fetchdata.east) -- (verifier.west);
+
+% Output arrow
+\draw[arrow, very thick] (aggregate.south) -- (output.north) node[midway, right, label] {Output};
+
+% Input label
+\node[left=0.3cm of in3, font=\small\bfseries, text=blue!70] {Inputs};
+
+\end{tikzpicture}
+\caption{Proof Manager architecture. The system processes inputs through constraint inference (which checks proof storage for previously generated proofs), circuit compilation, fetching on-chain data from both the blockchain transaction history and verifier contract, and proof generation. Generated proofs are saved to proof storage and then loaded by the aggregation step to produce the final compliance proof $\pi_R$.}
+\label{fig:proof-manager-architecture}
+\end{figure}
+
+\subsection{Updating Compliance Definition}
+Laws and regulations are constantly updated and by governments; therefore, definitions of compliance will change over time.  The framework allows updates to compliance definitions.  
+
+A compliance definition can be updated in two ways, and both cases involve the regulator changing the verifier contract state.
+\begin{itemize}
+    \item Public parameter $p_{\text{pub}}$ update (ex: add or remove an address from the sanction list) --- modifies the public inputs used in proof verification
+    \item Constraint composition update (ex: add or remove a constraint from the definition) --- modifies the circuit
+    \begin{itemize}
+        \item When using PLONK, circuit modifications are feasible, as the trusted setup can be reused.
+    \end{itemize}
+\end{itemize}
+
+The options for handling updates are to deploy a new contract or update the existing contract.
+
+\begin{itemize}
+    \item Regulator publishes a new verifier contract for the updated compliance and \textbf{all} applications must update their smart contracts to reference this new contract address in order to remain compliant.
+    \item Regulator updates their current verifier contract and no change is needed by the application.
+\end{itemize}
+
+Chainalysis, a leading blockchain analytics company used by government bodies, adds addresses to their sanctions lists every 30 days~\cite{chainalysissanctionsoracle}.  Using 30 days as a benchmark as to how often compliance definitions might have to change, it is infeasible to require all applications to make smart contract changes this frequently.  Especially because the failure to enforce compliance is potentially a criminal charge.  We don't want to introduce the potential for a mistake as small as an application updating a day late to result in legal action.  A priority of this framework is to provide applications with a strong guarantee of compliance and minimal overhead to the application.
+
+For these reasons, we choose the path of regulators updating their existing compliance contract instead of publishing a new one on each update.  This will keep the compliance verifier contract at the same address and does not require any action from the application.  With this technique, applications have the guarantee that all their users meet the compliance definition with no windows of non-compliance.
+
+It should be noted that updating compliance definitions can introduce a brief period of regulatory arbitrage.  This is the period after which non-compliant actors are identified but before sanction lists have been updated with their addresses, as discussed in~\cite{hazedaze}. Currently, blockchain analytics companies are responsible for regularly updating sanctions lists.  These blockchain analytics companies compete on speed and accuracy of their sanction list updates.  This framework allows compliance definitions' sanction lists to be updated by these analytics companies, which aligns with their current responsibilities and strengthens the incentive for fast updates.
+
+\subsubsection{Updating techniques}
+\reminder{Joss: TODO either proxy contract or ownable functions.  Unsure which is better for this case, and this is a question that will be answered during implementation.  Come back to this section when we've decided.  Maybe we don't have to enforce one choice over the other, but we should suggest a path because this framework should be simple for regulators to use.}
+\reminder{HFK: this addresses a remark I made about this earlier.  I think we have to at least mention the update methodology briefly earlier.  I see the current
+discussion there as worrisome to any reader who does not have confidence that we
+are actually doing it right.}
+
+\subsubsection{Post Update Re-proving}
+
+Users who generated but did not use a compliance proof before the regulator updated the verifier contract may have to re-generate parts of their proof.  They will have to regenerate the aggregate proof over the constraints, but might not have to re-prove all constraints in that compliance definition.  If a definition consists of constraints $C_1$ and $C_2$, and the regulator updates the public parameters of $C_1$, users will have to reprove $C_1$ but are able to re-use their proof of $C_2$.
+
+Re-proving only the constraints that changed in an update is less costly than re-proving the entire compliance definition.  Regulators have some incentive to make small updates since ease of proof generation leads to ease of compliance.
+
+\reminder{HFK: This is a larger topic.  Say regulation $R_1$ is updated to $R_2$.  We might not only publish the full $R_2$ for new proofs but also $R_{1,2}$ that
+has the property that $R_1\ \land\ R_{1,2} \implies R_2$}
+
+\subsubsection{Cross-chain Update Considerations}
+If a compliance definition is updated across multiple independent blockchains, there exists a small window of regulatory arbitrage after the update is processed on one chain but before it's processed on another.  There is no native solution for atomic cross-chain transactions that accounts for different data layers and virtual machines. 
+
+The solution to prevent windows of regulatory arbitrage is to publish the updated compliance before it goes into effect.  Recall that the compliance definition has time bounds: $$R = (C_1 \land C_2 \land \cdots \land C_k, [t_{\text{start}}, t_{\text{end}}])$$
+Compliance definitions can be published before $t_\text{start}$ time.  If it is published far enough ahead of $t_\text{start}$, it is likely that the update will be propagated across all chains by $t_\text{start}$ when the update goes into effect.
+
+\subsection{Regulator Trust Assumption}
+Because compliance is updatable, there exists a risk vector of the regulator of a compliance definition turning malicious and publishing an unjust or incorrect update.  For example, a regulator adds an address to the sanction list to censor a particular law-abiding citizen.
+
+This framework does not prevent against malicious regulators, but it provides a solution.  One core assumption is that any application trusts the author of the selected compliance definitions.  If an application is not satisfied with any of the available compliance definitions or untrusting of the regulators, they can easily publish and maintain their own definition.  They can create a compliance definition from scratch or fork one of the publicly available definitions.  However, ``in-house" compliance results in more work for the application's team.  A key property of this framework is that publishing compliance definitions is \textbf{permissionless}.
+
+Additionally, because compliance definitions are public, any malicious update is also public.  Transparent regulation is much safer for users and applications because the regulator must weigh the benefit of the malicious action against the consequences of the public fallout.
+
+\section{Prototype}
+This framework is applicable to any blockchain with a smart contract language and constraints can be written in any syntax as long as they are representable in a ZK circuit.  For our initial prototype of this framework, constraints are expressed in the Noir ZK DSL~\cite{AztecNoir22} and the application integrating this framework will use the Ethereum Virtual Machine (EVM) expressed through the Solidity smart contract DSL.  Noir was chosen because it provides high-level language semantics for writing ZK circuits.  The EVM and Solidity were chosen because they have a large and polished ecosystem of smart contract tools.
+
+\subsection{Prototype Constraints}
+These prototype constraints demonstrate the flexibility and expressiveness of our constraint formalism.  The constraints below were chosen to highlight some common compliance measures and do not cover all possible constraints.  We encourage regulators to be creative when building constraints.
+
+\bigskip
+\noindent\textbf{Non-Membership Constraint (\texttt{NON-MEM})}: Proves that an address is not in a given set. For example, proving an address is not on a list of sanctioned addresses.
+$$C_{\text{non-mem}} = (\text{sender}(\text{txn}) \notin p_{\text{sanctioned}}, B_{\text{current}})$$
+where $p_{\text{sanctioned}}$ is the public parameter containing the sanction list.
+
+\bigskip
+\noindent\textbf{Membership Constraint (\texttt{MEM})}: Proves that an address is in a given set. For example, proving an address is on an allow-list.
+$$C_{\text{mem}} = (\text{sender}(\text{txn}) \in p_{\text{allowlist}}, B_{\text{current}})$$
+where $p_{\text{allowlist}}$ is the public parameter containing the allowed addresses.
+
+\bigskip
+\noindent\textbf{Protocol Interaction Constraint (\texttt{INTERACT})}: Proves that at some point in their transaction history, an address interacted with a specific protocol.
+$$C_{\text{interact}} = (\exists \text{txn} \in \text{history}(\text{sender}(\text{txn})) : \text{recipient}(\text{txn}) = p_{\text{protocol}}, [B_0, B_{\text{current}}])$$
+where $p_{\text{protocol}}$ is the address of the required protocol.
+
+\bigskip
+\noindent\textbf{Protocol Avoidance Constraint (\texttt{AVOID})}: Proves that throughout their transaction history, an address never interacted with a specific protocol.
+$$C_{\text{avoid}} = (\forall \text{txn} \in \text{history}(\text{sender}(\text{txn})) : \text{recipient}(\text{txn}) \neq p_{\text{protocol}}, [B_0, B_{\text{current}}])$$
+where $p_{\text{protocol}}$ is the address of the prohibited protocol.
+
+\bigskip
+\noindent\textbf{Age Constraint (\texttt{AGE})}: 
+Requires that an address be at least a certain age. For example, require an addresses first transaction was at least 6 months ago as an effort to reduce sybil addresses.
+$$C_{\text{age}} = (B_{\text{current}} - \text{first-txn}(\text{sender}(\text{txn})).block \geq p_{\text{min-age}}, B_{\text{current}})$$
+where $B_{\text{first}}(\text{addr})$ returns the block height of the address's first transaction and $p_{\text{min-age}}$ is the minimum required age in blocks.
+
+\bigskip
+\noindent\textbf{Structuring Constraint (\texttt{STRUCTURE})}: Specific example of US Bank Secrecy Act non-structuring requirement. Proves a user has not sent multiple transactions totaling over \$10,000 within a window of time to the same recipient.
+$$C_{\text{structure}} = (\forall r \in \text{recipients}, \forall [B_i, B_j] \subseteq [B_0, B_{\text{current}}] \text{ where } (B_j - B_i) \leq p_{\text{window}} :$$
+$$\sum_{\text{txn} \to r \text{ in } [B_i, B_j]} \text{amount}(\text{txn}) < p_{\text{threshold}}, [B_0, B_{\text{current}}])$$
+where $p_{\text{window}}$ is the time window (e.g., 24 hours in blocks) and $p_{\text{threshold}} = 10000$ USD equivalent.
+
+\subsection{Integrating applications}
+In this prototype, applications integrate this framework by requiring proofs of compliance at specified entrypoint functions.  Applications choose compliance definitions based on the applications regulatory goals.
+
+We envision a constraint compiler that compiles constraints from a formal syntax into custom circuits, but for prototype purposes, constraints are ``hand compiled" into Noir circuits.  Constraints are still listed to show the logical definition.
+
+Each compliance definition $R$ is compiled as a ZK circuit using Noir and then published and maintained in a separate verifier Solidity contract, allowing the integrating application to reference compliance logic without implementing it directly.
+
+\subsubsection{Example: Compliant Stablecoin}
+The author of this stablecoin contract is, for example, a US based company and wishes to only allow users who are not on a list of US sanctioned addresses $p_{\text{sanctioned}}$ to interact with this stablecoin. 
+
+The compliance definition requires both sender and recipient to satisfy the non-membership constraint:
+$$R_{\text{stablecoin}} = C_{\text{non-mem}}(\text{sender}) \land C_{\text{non-mem}}(\text{recipient})$$
+where both constraints evaluate against the same sanction list $p_{\text{sanctioned}}$.
+
+\bigskip
+\begin{codebox}
+\Procname{Contract: $R_{\text{stablecoin}}\text{Verifier}$}
+\li \Comment State: $\id{sanctionedAddresses}$ (set of sanctioned addresses)
+\li
+\li $\proc{VerifyCompliance}(\id{sender}, \id{recipient}, \id{proof})$
+\li \>\Comment Construct public inputs for verification
+\li \>$\id{publicInputs} \gets \proc{FormatPublicInputs}(\id{sender}, \id{recipient}, \id{sanctionedAddresses})$
+\li \>
+\li \>\Comment Verify both parties satisfy NON-MEM constraint
+\li \>\kw{assert} $\proc{Verify}(\id{proof}, \id{publicInputs})$
+\li \>
+\li \>\Return \const{true}
+\end{codebox}
+
+\bigskip
+\begin{codebox}
+\Procname{Contract: CompliantStablecoin}
+\li \Comment State: 
+\li \>\>$\id{balance}$ (mapping from address to uint)
+\li \>\>$\id{verifierContract}$ (address of $R_{\text{stablecoin}}\text{Verifier}$)
+\li
+\li $\proc{Transfer}(\id{recipient}, \id{amount}, \id{proof})$
+\li \>$\id{sender} \gets \id{tx.origin}$
+\li \>
+\li \>\Comment Verify compliance through external verifier contract
+\li \>\kw{assert} $\id{verifierContract}.\proc{VerifyCompliance}(\id{sender}, \id{recipient}, \id{proof})$
+\li \>
+\li \>\Comment Execute transfer
+\li \>\kw{assert} $\id{balance}[\id{sender}] \geq \id{amount}$
+\li \>$\id{balance}[\id{sender}] \gets \id{balance}[\id{sender}] - \id{amount}$
+\li \>$\id{balance}[\id{recipient}] \gets \id{balance}[\id{recipient}] + \id{amount}$
+\li \>
+\li \>\Return \const{true}
+\end{codebox}
+
+This architecture demonstrates the composability of the framework: the compliance definition $R_{\text{stablecoin}}$ is maintained independently from the stablecoin logic, allowing the sanction list to be updated without modifying the stablecoin contract itself.
+
+\section{Benchmarks}
+\begin{itemize}
+    \item Benchmark graphs with reasoning for each test and implementation code link
+    \item Discussion on which pattern will be most heavily used and what acceptable performance is
+    \item Prove non-membership of the set of 0 addresses
+    \item Prove membership of the set of all addresses
+    \item Prove address genesis property (from coinbase, US citizen, etc)
+    \item Prove they didn't structure historic transactions over 10k
+    \item Prove over large transaction histories
+    \item more...
+\end{itemize}
+
+\section{Future Work}
+
+\subsection{Constraint Domain-Specific Language}
+To transform written law into a zkSNARK there needs to be a human readable intermediary syntax.  The constraint system introduced in \ref{sec:constraints} can be extended into a novel DSL used by regulatory bodies to define compliance.  A goal of this DSL is to be easier to read than the formal expression of constraints in raw logic.  This would make constraint construction \textbf{much} easier for regulators, leading to more framework integration.  A larger ecosystem of compliance definitions and a readable compliance syntax would in turn give applications and users more confidence.
+
+This DSL would compile directly into constraints.  The addition of this proposed DSL would require no changes to the overall framework and is backward compatible: the framework already is built around the constraint unit.  Even the verifier contracts could stay the same.  The only modification that would be necessary is a patch to the proof manager to add this compilation step.
+
+\paragraph{Example \texttt{NON-MEM} constraint translation} 
+
+The non-membership constraint defined as:
+$$C_{\text{non-mem}} = (\text{sender}(\text{txn}) \notin p_{\text{sanctioned}}, B_{\text{current}})$$
+Could instead be expressed in a constraint DSL in a more readable fashion:
+
+$$C_{\text{non-mem}} = \mathtt{User\ is\ not\ in\ } p_{\text{sanctioned}}$$
+
+Where ``is" expresses the temporal context of the current block, and $p_{\text{sanctioned}}$ is the sanction list.
+
+\paragraph{Example \texttt{INTERACT} constraint translation} 
+
+The protocol interaction constraint defined as:
+$$C_{\text{interact}} = (\exists \text{txn} \in \text{history}(\text{sender}(\text{txn})) : \text{recipient}(\text{txn}) = p_{\text{protocol}}, [B_0, B_{\text{current}}])$$
+
+Could be translated into:
+$$C_{\text{interact}} = \mathtt{User\ has\ sent\ transaction\ to\ } p_{\text{protocol}}$$
+
+Where ``has" means at any point in the user's transaction history and $p_{\text{protocol}}$ is the address of the required protocol.
+
+\paragraph{Example published compliance definition}
+
+Compare the compliance definition $R = C_\text{non-mem} \land C_\text{interact}$ with the current constraint syntax to the same definition using a constraint DSL.  Which would you be more likely to integrate with?
+
+\begin{codebox}
+\Procname{Current:}
+\li $\exists \text{txn} \in \text{history}(\text{sender}(\text{txn})) : \text{recipient}(\text{txn}) = p_{\text{protocol}}, [B_0, B_{\text{current}}]$
+\li $\text{sender}(\text{txn}) \notin p_{\text{sanctioned}}, B_{\text{current}}$
+\end{codebox}
+
+\begin{codebox}
+\Procname{Using constraint DSL:}
+\li $\mathtt{User\ is\ not\ in\ } p_{\text{sanctioned}}$
+\li $\mathtt{User\ has\ sent\ transaction\ to\ } p_{\text{protocol}}$
+\end{codebox}
+
+\subsection{Integration with commitment tree privacy mixers}
+Commitment tree mixers like Tornado Cash~\cite{tornadocash} and Privacy Pools~\cite{buterin2023blockchain} unlink the sender and receiver addresses of a transfer, creating privacy for the user.  A user enters the mixer by sending funds to the mixer along with a secret.  An address can withdraw funds from the mixer if they provide a ZK proof that know a secret corresponding to a deposit.  There is no way to reveal association between any two deposit and withdraw transactions in a mixer without the user revealing their secret.  The common use case is a privacy-desiring user withdrawing to one of their addresses with zero transaction history.
+
+Inspired by ``Derecho: Privacy Pools with Proof-Carrying Disclosures"~\cite{10.1145/3658644.3670270}, the compliance properties required to enter the mixer can be transferred to the withdrawing address by proving the owner of the withdrawing address knows the secret of a leaf in the commitment tree, therefore proving that they have access to an account that met the compliance definition to deposit into the mixer.  Then an additional proof needs to be made to assure that the withdrawing account hasn't previously violated compliance constraints.  Only the constraints required for depositing to the mixer can be carried to the withdrawing address.
+
+\textbf{Example}: Alice signs up to Coinbase and provides required KYC documents.  Alice then receives funds at her on-chain address from a known Coinbase address.  Alice can trivially prove her address received funds from Coinbase.  Alice does not want her entire transaction history to be public so she deposits some funds in a mixer that has integrated this framework and requires a compliance definition with a single constraint: $C_{\text{origin}}$
+
+$$C_{\text{origin}} = \left(\text{sender}(\text{first-txn}(\text{sender}(\text{txn}))) \in A \text{ at } [B_0, B_{\text{current}}]\right)$$
+
+$C_{\text{origin}}$ is read as ``the sender of this transaction's first transaction was from a set of addresses $A$'', where $A$ is a set of public Coinbase addresses.
+
+Alice proves this to deposit funds to the mixer.  She later withdraws her funds from the mixer to a freshly generated address with no transaction history.  Even though this new address never received funds from Coinbase, Alice is able to supply her commitment tree secret into a circuit to prove that she is transferring from an address that successfully proved $C_{\text{origin}}$, and therefore should be able to prove $C_{\text{origin}}$ when interacting with protocols with her new address.  Work needs to be done testing and implementing this.
+
+\subsection{Alternative Applications of Constraint Proving}
+This paper focused on the use case of proving compliance over a transaction history.  However, the underlying mechanism of proving arbitrary properties of a transaction history is powerful and can be used in other scenarios.  For example, airdrops that only allow addresses with specific properties to claim.  It could potentially even move some smart contract execution off-chain by requiring a proof that an invariant holds for a particular address instead of calculating it on-chain.
+
+\bibliographystyle{abbrv}
+\bibliography{blockchain}
+\end{document}
+
