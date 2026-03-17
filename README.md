@@ -1,4 +1,2 @@
-# thesis
-Dump for offline editing of my Master's thesis on compliance and privacy.
-
-Don't assume this is the most up to date version. 
+# Framework for Privacy Preserving Compliance
+Current draft of my Master's thesis on a framework for privacy preserving compliance.  I periodically update this repo so don't assume it's the most recent version.
