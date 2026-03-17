@@ -127,7 +127,7 @@ The goal is to maximize privacy while maintaining the ability to prove complianc
 \subsection{Industry Interest}
 The two privacy protocols currently operational that have some measure of compliance are Privacy Pools and Railgun.  Both have received a great deal of interest from users; Railgun was launched in 2022 and reached \$132 Million (USD) deposited~\cite{defillama2025railgun} in August 2025. Privacy Pools launched in March of 2025 and reached \$3.3 Million (USD) deposited~\cite{defillama2025privacypools} in January 2026.  \reminder{TODO update these figures in the final thesis}  Many users currently in the blockchain space desire both compliance and privacy.
 
-Large traditional financial corporations are yet to integrate significantly with blockchains.  In a 2025 survey, 300 major financial firms were asked what factors keep them from becoming more involved in blockchain technology. In this multiple-choice question, 52\% cited lack of regulatory certainty and 50\% cited lack of privacy as factors~\cite{paradigm2025tradfi}.  These are two of the top three blocking factors.  We see it is not just users, but also institutions who desire compliance and privacy.  In fact, this problem is a leading blocker for these institutions.  Solving this would result in a significant amount of capital being allocated on-chain.
+Large traditional financial corporations are yet to integrate significantly with blockchains.  In a 2025 survey, 300 major financial firms were asked what factors keep them from becoming more involved in blockchain technology. In this multiple-choice question, 52\% cited lack of regulatory certainty and 50\% cited lack of privacy as factors~\cite{paradigm2025tradfi}.  These are two of the top three blocking factors.  We see it is not just users, but also institutions who desire compliance and privacy.  Solving this would result in a significant amount of capital being allocated on-chain.
 
 In 2024, \$2.2 billion (USD) was stolen in crypto hacks and exploits~\cite{trmlabs2025cryptocrime}.  Tracing stolen funds from all hacks is too large a task, so auditors prioritize only the largest exploits.  Our framework provides strong \textbf{proactive} compliance guarantees.  Non-compliant actors are stopped from interaction with compliant applications.  Compare this to retroactive compliance measures where non-compliant actors are able to interact with private protocols who keep a history of all private transactions.  Not only does this create more work for auditors trying to trace non-compliant individuals, it also introduces the risk of leaking compliant user's private information.
 
@@ -137,13 +137,13 @@ In 2024, \$2.2 billion (USD) was stolen in crypto hacks and exploits~\cite{trmla
 \label{sec:privacy-preserving-compliance}
 The definitions provide a path for a strong and flexible compliance solution without compromising the benefits of having a privacy system on-chain.
 
-\paragraph{No deanonymization:}  \textit{deanonymization} refers to revealing private information about an address, like balances or transaction history.  No entity should have the ability to deanonymize user data in an on-chain privacy system\footnote{Caveat: A user can always choose to reveal their own private transaction history.  There is no way to prevent this and it is acceptable because the user is initiating their own deanonymization.  ``No deanonymization" refers to third-party deanonymization.}.  
+\paragraph{No deanonymization:}  \textit{deanonymization} refers to revealing private information about an address, like balances or transaction history.  No entity should have the ability to deanonymize user data in an on-chain privacy system\footnote{Caveat: A user can always choose to reveal their own private transaction history.  This is acceptable because the user is initiating their own deanonymization.  ``No deanonymization" refers to third-party deanonymization.}.
 
-Any compliant privacy solution that gives privileges to decrypt private user data has deanonymization.  The ability for a third party to reveal a user's private details is fundamentally weaker privacy is and unnecessary.  We can guarantee that private transactions can only be revealed by the user, and do so without compromising compliance.  We also provide stronger compliance guarantees than viewing key compliance.  Viewing keys are used for retroactive compliance checks, and our framework has proactive compliance: non-compliant actors are stopped before making their transaction rather than after.
+Any compliant privacy solution that gives privileges to decrypt private user data has deanonymization.  The ability for a third party to reveal a user's private details is fundamentally weaker privacy.  We can guarantee that private transactions can only be revealed by the user, and do so without compromising compliance.  We also provide stronger compliance guarantees than viewing key compliance.  Viewing keys are used for retroactive compliance checks, and our framework has proactive compliance: non-compliant actors are stopped before making their transaction rather than after.
 
 The existence of the ability to deanonymize users is a risk vector to users and compromises trustlessness, as highlighted in~\cite{a16z_zkp_privacy_2022}.  Individuals with access to private information can and will abuse it.  Examples include the case of Twitter employees selling user personal data to Saudi Arabia~\cite{newman2019twitter, collier2022twitter}, or US telecom providers illegally selling user data~\cite{daws2024fcc}.  Additionally, any centralized collection of user data can be hacked.  In 2024, data that US telecommunication companies were legally required to collect was hacked~\cite{sakellariadis2024china}.  In 2025, personal data held by the Ukrainian government was hacked by Russia~\cite{post2025ukraine}.  In 2022, 23 terabytes of personal information on 1 billion Chinese residents was leaked from a police database and sold~\cite{wikipedia2025shanghai}.
 
-An on-chain privacy system where a 3rd party also knows secret user data is as ``private" as a traditional exchange or bank.  In order for a on-chain privacy system to provide unique value to users, it must not allow for deanonymization.
+An on-chain privacy system where a third party also knows secret user data is as ``private" as a traditional exchange or bank.  In order for a on-chain privacy system to provide unique value to users, it must not allow for deanonymization.
 
 \paragraph{Proactive compliance:} A compliance system is \textit{proactive} if it prevents non-compliant action rather than detecting it afterwards. A proactive compliance system both preserves user privacy by eliminating the need for information disclosure and reduces regulatory burden by automating compliance checks.  Regulators can check compliance by verification of proofs, which is much more efficient than having to evaluate full execution histories.  Users can show transparently that they are in compliance without having to reveal private data.  Our framework prevents non-compliant actions by requiring a proof of compliance before a transaction is executed.  
 
@@ -183,7 +183,7 @@ We review other work that attempts to solve the compliant privacy problem by a f
 \rotatebox{90}{\textbf{Chain agnostic}} & 
 \rotatebox{90}{\textbf{Modular privacy}} \\
 \hline
-Aleo~\cite{aleo2025homepage} (ZEXE~\cite{ZEXE}) &\checkmark &\xmark &\xmark &\xmark &\qmark &\xmark &\xmark &\checkmark \\
+Aleo~\cite{aleo2025homepage} (ZEXE~\cite{ZEXE}) &\checkmark &\xmark &\xmark &\checkmark &\qmark &\xmark &\xmark &\checkmark \\
 \hline
 Payy~\cite{payywhitepaper} &\xmark &\xmark &\xmark &\xmark &\qmark &\xmark &\xmark &\checkmark \\
 \hline
@@ -213,9 +213,7 @@ Hinkal~\cite{hinkal} &\checkmark &\checkmark &\xmark &\xmark &\checkmark &\check
 \hline
 Privacy Pools~\cite{privacypools,buterin2023blockchain} &\checkmark &\checkmark &\xmark &\checkmark &\xmark &\checkmark &\checkmark &\checkmark \\
 \hline
-Nightfall~\cite{ey2025blockchain} &\qmark &\qmark &\qmark &\qmark &\qmark &\qmark &\xmark &\xmark \\
-\hline
-Starlight~\cite{ey2025blockchain} &\qmark &\qmark &\qmark &\qmark &\qmark &\qmark &\xmark &\xmark \\
+Nightfall~\cite{ey2025blockchain} &\xmark &\xmark &\xmark &\xmark &\xmark &\xmark &\xmark &\xmark \\
 \hline
 \rowcolor{blue!10}
 \textbf{Our framework} &\checkmark &\checkmark &\checkmark &\checkmark &\checkmark &\checkmark &\checkmark &\checkmark \\
@@ -223,7 +221,6 @@ Starlight~\cite{ey2025blockchain} &\qmark &\qmark &\qmark &\qmark &\qmark &\qmar
 \end{tabular}
 \end{table}
 
-\reminder{Joss: I asked Paul where I could find some technical documentation on nightfall and starlight.  So far all I've found is marketing material}
 
 % Symbols you can use to fill cells:
 % \checkmark  (requires \usepackage{amssymb})
@@ -277,7 +274,7 @@ Compliance definitions are updatable by their author to account for changing reg
 \label{sec:regulators}
 Regulators create compliance definitions over on-chain data and publish these definitions publicly with a signature.  The manner in which they are published is an implementation detail, but the compliance definitions need to be publicly accessible and in a form that can be compiled into a ZK circuit for users to prove.
 
-We refer to any entity that publishes a compliance definition as a ``regulator".  Ideally, the entity is  associated with the government regulatory agency, but in practice, particularly initially, the publisher is most likely to be a blockchain analytics company.  These companies already assume compliance responsibilities, such as maintaining sanction lists and monitoring for suspicious chain activity.
+Publishing a compliance definition is permissionless and we refer to any entity that does as a ``regulator".  Ideally, the entity is  associated with the government regulatory agency, but in practice, particularly initially, the publisher is most likely to be a blockchain analytics company.  These companies already assume compliance responsibilities, such as maintaining sanction lists and monitoring for suspicious chain activity.
 
 As this is an open framework, there is no restriction on who can publish compliance definitions.  Applications need to be careful to select definitions published by reputable sources.
 Regulators are also responsible for updating compliance definitions, like adding more constraints or updating parameters, with each update having a new
@@ -574,7 +571,7 @@ Each update to a compliance definition, whether a constraint update or a public 
 \li \>\>$\id{paramsRoot}$ (Merkle root of public parameters)
 \li \>\>$\id{tStart}$ (block height when this version becomes active)
 \li \>\>$\id{tEnd}$ (block height when this version expires
-\li \>\>$\id{metadataHash}$ (IPFS hash of compliance circuit)
+\li \>\>$\id{metadataHash}$ (IPFS CID of compliance circuit)
 \li
 \li \Comment State variables:
 \li \>\>$\id{versions}$ (array of $\id{ComplianceVersion}$)
@@ -710,7 +707,7 @@ The proof manager is responsible for
     \item Fetching on-chain data of the user's transaction history necessary for proof generation.
     \item Fetching public proof inputs from the published verifier contract.
     \item Generating constraint proofs.
-    \item Generating aggregate proof over the constrains to prove compliance.
+    \item Generating aggregate proof over the constraints to prove compliance.
     \item Saving completed proofs.
 \end{itemize}
 
@@ -831,17 +828,17 @@ Re-proving only the constraints that changed in an update is less costly than re
 If a compliance definition is updated across multiple independent blockchains, there can exist a small window of time after the update is finalized on one chain but before it's finalized on another.  There is no native solution for atomic cross-chain transactions that accounts for different data layers and virtual machines. 
 
 The solution is to publish the updated compliance before it goes into effect.  Recall that the compliance definition has time bounds: $$R = C_1 \land C_2 \land \cdots \land C_k, [t_{\text{start}}, t_{\text{end}}]$$
-Compliance definitions can be published before $t_\text{start}$ time.  If it is published far enough ahead of $t_\text{start}$, it is likely that the update transaction will be finalized all chains by $t_\text{start}$ when the update goes into effect.  This is a natural consequence of making time a first-class parameter in compliance definitions.
+Compliance definitions can be published before $t_\text{start}$ time.  If it is published far enough ahead of $t_\text{start}$, it is likely that the update transaction will be finalized on all chains by $t_\text{start}$ when the update goes into effect.  This is a natural consequence of making time a first-class parameter in compliance definitions.
 
 \subsection{Regulator Trust Assumption}
 Because compliance is updatable, there exists a risk vector of the regulator of a compliance definition turning malicious and publishing an unjust or incorrect update.  For example, a regulator adds an address to the sanction list to censor a particular law-abiding citizen.
 
-This framework does not prevent against malicious regulators, but it provides a solution.  One core assumption is that applications trust the author of the selected compliance definitions.  If an application is not satisfied with any of the available compliance definitions or untrusting of the regulators, they can easily publish and maintain their own definition.  They can create a compliance definition from scratch or fork one of the publicly available definitions.  However, ``in-house" compliance results in more work for the application's team.  A key property of this framework is that publishing compliance definitions is \textbf{permissionless}.
+This framework does not prevent against malicious regulators, but it provides a solution.  A key property of this framework is that publishing compliance definitions is \textbf{permissionless}.  If an application is not satisfied with any of the available compliance definitions or untrusting of the regulators, they can easily publish and maintain their own definition.  They can create a compliance definition from scratch or fork one of the publicly available definitions.  However, ``in-house" compliance results in more work for the application's team.
 
 Additionally, because compliance definitions are public, any malicious update is also public.  Transparent regulation is much safer for users and applications because the regulator must weigh the benefit of the malicious action against the consequences of the public fallout.
 
 \section{Prototype}
-This framework is applicable to any blockchain with a smart-contract language and constraints can be written in any syntax as long as they are representable in a ZK circuit.  For our initial prototype of this framework, constraints are expressed in the Noir ZK DSL~\cite{AztecNoir22} and the application integrating this framework will use the Ethereum Virtual Machine (EVM) expressed through the Solidity smart-contract DSL.  Noir was chosen because it provides high-level language semantics for writing ZK circuits.  The EVM and Solidity were chosen because they have a large and polished ecosystem of smart-contract tools.
+This framework is applicable to any blockchain with a smart-contract language and constraints can be written in any syntax as long as they are representable in a ZK circuit.  For our initial prototype of this framework, constraints are expressed in the Noir ZK DSL~\cite{AztecNoir22} and the application integrating this framework will use the Ethereum Virtual Machine (EVM) expressed through the Solidity smart-contract DSL.  Noir was chosen because it provides high-level language semantics for writing ZK circuits, but any ZK circuit language can be used.  The EVM and Solidity were chosen because they have a large and polished ecosystem of smart-contract tools.
 
 \subsection{Prototype Constraints}
 \label{sec:prototype-constraints}
@@ -954,6 +951,8 @@ This architecture demonstrates the composability of the framework: the complianc
 To transform written law into a zkSNARK there needs to be a human readable intermediary syntax.  The constraint system introduced in \ref{sec:constraints} can be extended into a novel DSL used by regulatory bodies to define compliance.  A goal of this DSL is to be easier to read than the formal expression of constraints in raw logic.  This would make constraint construction \textbf{much} easier for regulators, leading to more framework integration.  A larger ecosystem of compliance definitions and a readable compliance syntax would in turn give applications and users more confidence.
 
 This DSL would compile directly into constraints.  The addition of this proposed DSL would require no changes to the overall framework and is backward compatible: the framework already is built around the constraint unit.  Even the verifier contracts could stay the same.  The only modification that would be necessary is a patch to the proof manager to add this compilation step.
+
+\reminder{TODO: highlight how we're interoperable with any ZK backend.  Could target RISCV as the output of our compiler to feed into any RISCV zkvm}
 
 \paragraph{Example \texttt{NON-MEM} constraint translation} 
 
