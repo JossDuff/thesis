@@ -1,4 +1,6 @@
 # Framework for Privacy-Preserving Compliance
-Current draft of my Master's thesis on a framework for privacy preserving compliance.  I periodically update this repo so don't assume it's the most recent version.
+My Master's thesis on a framework for privacy-preserving compliance.  This was completed for my Master's in Computer Science at Lehigh University.  This document began in the Summer of 2025 and was submitted as part of my graduation in the Spring of 2026.
 
-You can find a work in progress implementation at [https://github.com/JossDuff/Privacy-Preserving-Compliance](https://github.com/JossDuff/Privacy-Preserving-Compliance).
+This repo houses the submitted version of my thesis in Lehigh's mandated formatting.  Any new research I do on this topic will not be reflected in this repository.
+
+You can find a work in progress implementation and updates at [https://github.com/JossDuff/Privacy-Preserving-Compliance](https://github.com/JossDuff/Privacy-Preserving-Compliance).
